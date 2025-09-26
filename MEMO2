@@ -1,0 +1,17 @@
+CREATE TABLE distribution_records (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  publication_id UUID NOT NULL REFERENCES publications(id) ON DELETE CASCADE,
+  taxon_id UUID NOT NULL REFERENCES scientific_n(id) ON DELETE CASCADE,
+  record_type TEXT NOT NULL CHECK (record_type IN ('specimen', 'observation', 'literature')),
+  country TEXT,
+  region TEXT,
+  latitude DOUBLE PRECISION,
+  longitude DOUBLE PRECISION,
+  specimen_count INTEGER,
+  sex TEXT CHECK (sex IN ('male', 'female', 'unknown')),
+  collector TEXT,
+  collection_date DATE,
+  remarks TEXT,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT now()
+);

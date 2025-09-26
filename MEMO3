@@ -1,0 +1,381 @@
+import React from "react";
+import { useEffect, useState } from "react";
+import {
+  PieChart, Pie, Cell, Tooltip, Legend,
+  BarChart, Bar, XAxis, YAxis, CartesianGrid,
+} from "recharts";
+import { Box, Typography, Grid, Paper, Skeleton, Dialog, DialogTitle, DialogContent, DialogContentText, IconButton } from "@mui/material";
+import { MapContainer, TileLayer, GeoJSON } from "react-leaflet";
+import CloseIcon from '@mui/icons-material/Close';
+import "leaflet/dist/leaflet.css";
+import supabase from "../utils/supabase";
+import worldGeoJson from "../../data/custom.geo";
+
+const COLORS = ["#0088FE", "#00C49F", "#FFBB28", "#FF8042", "#FF5E57", "#845EC2"];
+
+// グラデーションカラー関数
+const interpolateColor = (value: number) => {
+  const colors = [
+    [255, 255, 255], [0, 212, 255],
+    [255, 255, 0], [255, 165, 0],
+    [255, 0, 0], [139, 69, 19],
+  ];
+  const steps = colors.length - 1;
+  const step = Math.min(Math.floor(value * steps), steps - 1);
+  const ratio = value * steps - step;
+  const start = colors[step];
+  const end = colors[step + 1];
+  const interpolated = start.map((s, i) => Math.round(s + (end[i] - s) * ratio));
+  return `rgb(${interpolated.join(",")})`;
+};
+
+export default function Statistics() {
+  const [scientificNames, setScientificNames] = useState([]);
+  const [countries, setCountries] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  const [openDialog, setOpenDialog] = useState(false);
+  const [dialogContent, setDialogContent] = useState(null);
+  const [dialogTitle, setDialogTitle] = useState("");
+  const [dialogDescription, setDialogDescription] = useState("");
+
+  useEffect(() => {
+    (async () => {
+      const { data: sciData } = await supabase
+        .from("scientific_names")
+        .select("id, valid_name_id, current_rank, type_locality, authority_year");
+      const { data: countryData } = await supabase
+        .from("countries")
+        .select("name, geojson_name");
+
+      setScientificNames(sciData || []);
+      setCountries(countryData || []);
+      setLoading(false);
+    })();
+  }, []);
+
+  const countryMap = Object.fromEntries(
+    countries.filter(c => c.geojson_name).map(c => [c.name, c.geojson_name])
+  );
+
+  const validInvalidData = [
+    { name: "Valid", value: scientificNames.filter(d => d.valid_name_id === d.id).length },
+    { name: "Invalid", value: scientificNames.filter(d => d.valid_name_id !== d.id).length },
+  ];
+
+  const rankData = Object.entries(
+    scientificNames.reduce((acc: any, cur) => {
+      acc[cur.current_rank] = (acc[cur.current_rank] || 0) + 1;
+      return acc;
+    }, {})
+  ).map(([name, value]) => ({ name, value }));
+
+  const countryDataArr = Object.entries(
+    scientificNames.reduce((acc: any, cur) => {
+      const mapped = countryMap[cur.type_locality];
+      if (mapped) {
+        acc[mapped] = (acc[mapped] || 0) + 1;
+      }
+      return acc;
+    }, {})
+  ).map(([name, value]) => ({ name, value }));
+
+  const yearGroupedData = Object.values(
+    scientificNames.reduce((acc: any, cur) => {
+      const year = cur.authority_year || "Unknown";
+      if (!acc[year]) acc[year] = { year, Valid: 0, Invalid: 0 };
+      if (cur.valid_name_id === cur.id) acc[year].Valid++;
+      else acc[year].Invalid++;
+      return acc;
+    }, {})
+  ).sort((a, b) => (a.year > b.year ? 1 : -1));
+
+  const countryCount = scientificNames.reduce((acc: any, cur) => {
+    const mapped = countryMap[cur.type_locality];
+    if (mapped) {
+      acc[mapped] = (acc[mapped] || 0) + 1;
+    }
+    return acc;
+  }, {});
+
+  const maxCount = Math.max(...Object.values(countryCount), 1);
+
+  const style = (feature: any) => {
+    const adminName = feature.properties.admin;
+    const count = countryCount[adminName] || 0;
+    const normalized = Math.min(count / maxCount, 1);
+    return {
+      fillColor: interpolateColor(normalized),
+      weight: 1,
+      opacity: 1,
+      color: "white",
+      dashArray: "3",
+      fillOpacity: 0.7,
+    };
+  };
+
+  const onEachFeature = (feature: any, layer: any) => {
+    const adminName = feature.properties.admin;
+    const count = countryCount[adminName] || 0;
+    if (count > 0) {
+      layer.bindPopup(`${adminName}: ${count} species`);
+    }
+  };
+
+  const handleOpenDialog = (title: string, description: string, content: React.ReactNode) => {
+    setDialogTitle(title);
+    setDialogDescription(description);
+    setDialogContent(content);
+    setOpenDialog(true);
+  };
+
+  const handleCloseDialog = () => {
+    setOpenDialog(false);
+  };
+
+  if (loading) {
+    return (
+      <Box p={4}>
+        <Typography variant="h4">Statistics</Typography>
+        <Grid container spacing={2}>
+          {[...Array(5)].map((_, i) => (
+            <Grid item xs={12} md={6} key={i}>
+              <Skeleton variant="rectangular" height={300} />
+            </Grid>
+          ))}
+        </Grid>
+      </Box>
+    );
+  }
+
+  return (
+    <Box p={4}>
+      <Typography variant="h2" gutterBottom>Statistics</Typography>
+      <Grid container spacing={3} mt={2}>
+        {/* Valid vs Invalid Chart */}
+        <Grid item xs={12} md={6}>
+          <Paper elevation={3} sx={{ p: 2, cursor: 'pointer' }} onClick={() =>
+            handleOpenDialog(
+              "Valid vs Invalid Names",
+              "有効（Valid）か無効（Invalid）かを示す円グラフです。",
+              <PieChart width={600} height={500}>
+                <Pie data={validInvalidData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={150} label>
+                  {validInvalidData.map((entry, index) => (
+                    <Cell key={index} fill={COLORS[index % COLORS.length]} />
+                  ))}
+                </Pie>
+                <Tooltip />
+                <Legend />
+              </PieChart>
+            )
+          }>
+            <Typography variant="h6" gutterBottom>Valid vs Invalid Names</Typography>
+            <PieChart width={400} height={300}>
+              <Pie data={validInvalidData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={100} label>
+                {validInvalidData.map((entry, index) => (
+                  <Cell key={index} fill={COLORS[index % COLORS.length]} />
+                ))}
+              </Pie>
+              <Tooltip />
+              <Legend />
+            </PieChart>
+          </Paper>
+        </Grid>
+
+        {/* Rank Distribution Chart */}
+        <Grid item xs={12} md={6}>
+          <Paper elevation={3} sx={{ p: 2, cursor: 'pointer' }} onClick={() =>
+            handleOpenDialog(
+              "Ranks Distribution",
+              "分類学的ランク（種、属など）の分布を示す円グラフです。",
+              <PieChart width={600} height={500}>
+                <Pie data={rankData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={150} label>
+                  {rankData.map((entry, index) => (
+                    <Cell key={index} fill={COLORS[index % COLORS.length]} />
+                  ))}
+                </Pie>
+                <Tooltip />
+                <Legend />
+              </PieChart>
+            )
+          }>
+            <Typography variant="h6" gutterBottom>Ranks Distribution</Typography>
+            <PieChart width={400} height={300}>
+              <Pie data={rankData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={100} label>
+                {rankData.map((entry, index) => (
+                  <Cell key={index} fill={COLORS[index % COLORS.length]} />
+                ))}
+              </Pie>
+              <Tooltip />
+              <Legend />
+            </PieChart>
+          </Paper>
+        </Grid>
+
+        {/* Yearly Species Descriptions */}
+        <Grid item xs={12}>
+          <Paper elevation={3} sx={{ p: 2, cursor: 'pointer' }} onClick={() =>
+            handleOpenDialog(
+              "Yearly New Species Descriptions",
+              "各年ごとの新種記載数（有効/無効）を示す積み上げ棒グラフです。",
+              <BarChart width={1000} height={600} data={yearGroupedData}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="year" />
+                <YAxis />
+                <Tooltip />
+                <Legend />
+                <Bar dataKey="Valid" stackId="a" fill="#0088FE" />
+                <Bar dataKey="Invalid" stackId="a" fill="#FF8042" />
+              </BarChart>
+            )
+          }>
+            <Typography variant="h6" gutterBottom>Yearly New Species Descriptions (Valid vs Invalid)</Typography>
+            <BarChart width={800} height={400} data={yearGroupedData}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="year" />
+              <YAxis />
+              <Tooltip />
+              <Legend />
+              <Bar dataKey="Valid" stackId="a" fill="#0088FE" />
+              <Bar dataKey="Invalid" stackId="a" fill="#FF8042" />
+            </BarChart>
+          </Paper>
+        </Grid>
+
+        {/* Type Localities Heatmap */}
+<Grid item xs={12} sx={{ maxWidth: 1000, minWidth: 800, mx: "auto" }}>
+  <Paper
+    elevation={3}
+    sx={{ p: 2, cursor: 'pointer' }}
+    onClick={() =>
+      handleOpenDialog(
+        "Type Localities Heatmap",
+        "世界各国の新種記載数を色で示したヒートマップです。濃い色ほど記載数が多いことを表します。",
+        <Box sx={{ position: "relative", height: 600 }}>
+          <MapContainer
+            center={[20, 0]}
+            zoom={2}
+            style={{ width: "100%", height: "100%", borderRadius: "8px" }}
+            worldCopyJump={false}
+            maxBounds={[[-90, -180], [90, 180]]}
+                maxBoundsViscosity={1.0}
+                scrollWheelZoom={{ sensitivity: 2 }}  // スクロール感度
+                wheelDebounceTime={10}                 // ホイール待機時間
+                wheelPxPerZoomLevel={100}              // 1ズームあたりのホイールpx
+          >
+            <TileLayer
+              //url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                //attribution='&copy; OpenStreetMap contributors'
+                  url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+  attribution='&copy; OpenStreetMap contributors'
+            />
+            <GeoJSON data={worldGeoJson} style={style} onEachFeature={onEachFeature} />
+          </MapContainer>
+
+          {/* カラーバー */}
+          <Box
+            sx={{
+              position: 'absolute',
+              right: 20,
+              bottom: 40,
+              width: 250,
+              height: 20,
+              background: "linear-gradient(to right, white, #00D4FF, yellow, orange, red, #8B4513)",
+              border: "1px solid black",
+              borderRadius: "4px",
+            }}
+          />
+          <Box
+            sx={{
+              position: 'absolute',
+              right: 20,
+              bottom: 10,
+              width: 250,
+              display: 'flex',
+              justifyContent: 'space-between',
+              fontSize: 14,
+              color: 'black',
+            }}
+          >
+            <div>0</div>
+            <div>{maxCount}</div>
+          </Box>
+        </Box>
+      )
+    }
+  >
+    <Typography variant="h6" gutterBottom>
+      Type Localities Heatmap (by Country)
+    </Typography>
+
+    <Box sx={{ height: 500, borderRadius: 2, overflow: "hidden", position: "relative" }}>
+      <MapContainer
+        center={[20, 0]}
+        zoom={2}
+        style={{ width: "100%", height: "100%" }}
+        worldCopyJump={false}
+        maxBounds={[[-90, -180], [90, 180]]}
+        maxBoundsViscosity={1.0}
+      >
+        <TileLayer
+          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          attribution='&copy; OpenStreetMap contributors'
+        />
+        <GeoJSON data={worldGeoJson} style={style} onEachFeature={onEachFeature} />
+      </MapContainer>
+
+      {/* カラーバー */}
+      <Box
+        sx={{
+          position: 'absolute',
+          right: 20,
+          bottom: 40,
+          width: 250,
+          height: 20,
+          background: "linear-gradient(to right, white, #00D4FF, yellow, orange, red, #8B4513)",
+          border: "1px solid black",
+          borderRadius: "4px",
+          zIndex: 1000,
+        }}
+      />
+      <Box
+        sx={{
+          position: 'absolute',
+          right: 20,
+          bottom: 10,
+          width: 250,
+          display: 'flex',
+          justifyContent: 'space-between',
+          fontSize: 12,
+          color: 'black',
+          zIndex: 1000,
+        }}
+      >
+        <div>0</div>
+        <div>{maxCount}</div>
+      </Box>
+    </Box>
+  </Paper>
+</Grid>
+
+
+      </Grid>
+
+      {/* Dialog */}
+      <Dialog open={openDialog} onClose={handleCloseDialog} maxWidth="xl" fullWidth>
+        <DialogTitle>
+          {dialogTitle}
+          <IconButton onClick={handleCloseDialog} sx={{ position: 'absolute', right: 8, top: 8 }}>
+            <CloseIcon />
+          </IconButton>
+        </DialogTitle>
+        <DialogContent dividers>
+          <DialogContentText sx={{ mb: 2 }}>
+            {dialogDescription}
+          </DialogContentText>
+          {dialogContent}
+        </DialogContent>
+      </Dialog>
+    </Box>
+  );
+}

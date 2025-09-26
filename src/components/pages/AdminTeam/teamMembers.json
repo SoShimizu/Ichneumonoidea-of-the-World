@@ -1,0 +1,66 @@
+[
+  {
+    "email": "parasitoidwasp.sou@gmail.com",
+    "avatarUrl": "/avatars/So_Shimizu.jpg",
+    "en": {
+      "name": "So Shimizu",
+      "role": "Project Lead / Data Manager",
+      "affiliation": "NARO; JSPS PD",
+      "description": "Specializes in the natural history of Ichneumonidae. Responsible for design & management of the entire database."
+    },
+    "ja": {
+      "name": "清水 壮",
+      "role": "プロジェクトリード／データマネージャー",
+      "affiliation": "農研機構（NARO）、学振PD",
+      "description": "ヒメバチ上科の自然史を専門とし、データベース全体の設計・運用を担当。"
+    }
+  },
+  {
+    "email": "pooh890510@gmail.com",
+    "avatarUrl": "/avatars/chen.png",
+    "en": {
+      "name": "Hsuan-Pu Chen",
+      "role": "Data Manager",
+      "affiliation": "Preparing now",
+      "description": "Specializes in the natural history of Ichneumonidae (Netelia). Responsible for data management."
+    },
+    "ja": {
+      "name": "陳 玄樸",
+      "role": "データマネージャー",
+      "affiliation": "準備中",
+      "description": "ヒメバチ上科（Netelia属）の自然史を専門とし、データ管理を担当。"
+    }
+  },
+    {
+    "email": "namikikikuchi@gmail.com",
+    "avatarUrl": "/avatars/kikuchi.png",
+    "en": {
+      "name": "Namiki Kikuchi",
+      "role": "Data Manager",
+      "affiliation": "Toyohashi Museum of Natural History",
+      "description": "Specializes in the natural history of Ichneumonidae (especially the Ichneumoninae). Responsible for the data management."
+    },
+    "ja": {
+      "name": "菊地 波輝",
+      "role": "データマネージャー",
+      "affiliation": "豊橋市自然史博物館",
+      "description": "専門は、ヒメバチ亜科を中心としたヒメバチ科の自然史科学。データ管理を担当。"
+    }
+  },
+      {
+    "email": "himebachi@gmail.com",
+    "avatarUrl": "/avatars/konishi.png",
+    "en": {
+      "name": "Kazuhiko Konishi",
+      "role": "Data Manager",
+      "affiliation": "The Hokkaido University Museum",
+      "description": "Specializes in the natural history of Ichneumonidae. Responsible for the data management."
+    },
+    "ja": {
+      "name": "小西 和彦",
+      "role": "データマネージャー",
+      "affiliation": "北海道大学総合博物館",
+      "description": "専門は、ヒメバチ科を中心とした寄生蜂の自然史科学。データ管理を担当。"
+    }
+  }
+]

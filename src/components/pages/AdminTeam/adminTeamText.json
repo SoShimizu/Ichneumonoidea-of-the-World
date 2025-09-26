@@ -1,0 +1,14 @@
+{
+  "en": {
+    "pageTitle": "Admin Team",
+    "aboutTitle": "About the Admin Team",
+    "aboutText": "Let us introduce the administrators who support this database. The database is maintained and managed by administrators with extensive experience and expertise in fields such as Ichneumonoidea, natural history sciences, biodiversity informatics, and web technologies to ensure its quality. Nevertheless, keeping the database updated while trying to cover the vast amount of information published globally each year is no easy task. We are deeply grateful to the members of the administrator team who have agreed to participate in and support this database project. If you are interested in joining as an administrator, please contact us to receive login credentials.",
+    "contactButton": "Contact the Admin Team"
+  },
+  "ja": {
+    "pageTitle": "管理者チーム",
+    "aboutTitle": "管理者チームについて",
+    "aboutText": "本データベースを支えている管理者をご紹介します。本データベースは、ヒメバチ上科、自然史科学、生物多様性情報学、Web技術において豊富な経験と専門知識を持つ管理者によって維持されています。世界中で発表される膨大な情報をカバーしつつ更新し続けることは容易ではありません。このデータベースプロジェクトに賛同し、参画している管理者チームのメンバーに心より感謝いたします。管理者としての参加をご希望の場合は、お問い合わせください。ログイン情報を発行いたします。",
+    "contactButton": "管理者チームに連絡"
+  }
+}

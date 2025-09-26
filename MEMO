@@ -1,0 +1,734 @@
+文献記録編集コンソール
+分布記録編集コンソール
+生態情報編集コンソール
+分類学的措置編集コンソール
+
+
+
+
+全テーブルとカラム一覧（型と説明）を取得
+SELECT
+  table_name,
+  column_name,
+  data_type,
+  is_nullable,
+  column_default
+FROM
+  information_schema.columns
+WHERE
+  table_schema = 'public'
+ORDER BY
+  table_name, ordinal_position;
+
+
+
+
+
+
+SELECT
+  table_name,
+  column_name,
+  data_type,
+  is_nullable,
+  column_default
+FROM
+  information_schema.columns
+WHERE
+  table_label = 'audit_log'
+
+
+SELECT
+  tc.constraint_name,
+  kcu.column_name,
+  ccu.table_name AS foreign_table,
+  ccu.column_name AS foreign_column
+FROM
+  information_schema.table_constraints AS tc
+JOIN information_schema.key_column_usage AS kcu
+  ON tc.constraint_name = kcu.constraint_name
+  AND tc.table_name = kcu.table_name
+JOIN information_schema.constraint_column_usage AS ccu
+  ON ccu.constraint_name = tc.constraint_name
+WHERE
+  tc.constraint_type = 'FOREIGN KEY'
+  AND tc.table_name = 'specimens_types';
+
+
+
+
+
+外部キー（親子関係）一覧を取得
+
+
+
+
+
+
+
+
+
+2W.5_@Cr_Q4WScS
+
+
+Blaimer BB, Santos BF, Cruaud A et al (2023) Key innovations and the diversification of Hymenoptera. Nat Commun 14:1212. https://doi.org/10.1038/s41467-023-36868-4
+
+Article
+ 
+CAS
+ 
+PubMed
+ 
+PubMed Central
+ 
+Google Scholar
+ 
+
+Boraschi D, Peruquetti RC, Del Lama MA (2005) Biologia, comportamento social e alocação sexual de Digelasinus diversipes (Kirby, 1882)(Hymenoptera, Argidae). Revista Brasileira De Entomologia 49:253–263. https://doi.org/10.1590/S0085-56262005000200010
+
+Article
+ 
+Google Scholar
+ 
+
+Branco M, Medeiros MA (2001) Impacto de inseticidas sobre parasitóides da traça-das-crucíferas em repolho, no Distrito Federal. Pesq Agrop Brasileira 36:07–13. https://doi.org/10.1590/S0100-204X2001000100002
+
+Article
+ 
+Google Scholar
+ 
+
+Brauns S (1905) Zwei neue Mesostenus aus Brasilien (Hymenoptera). Zeitschrift Für Syst Hymenop und Dipter 5:129–131
+
+Google Scholar
+ 
+
+Broad GR, Shaw MR, Fitton MG (2018) Ichneumonid wasps: (Hymenoptera: Ichneumonidae): their classification and biology. Royal Entomological Society, London
+
+Book
+ 
+Google Scholar
+ 
+
+Camargo LF, Brito RA, Penteado-Dias AM (2015) Redescription of Campoletis sonorensis (Cameron, 1886) (Hymenoptera, Ichneumonidae, Campopleginae), parasitoid of Spodoptera frugiperda (JE Smith, 1797) (Lepidoptera, Noctuidae) in Brazil. Braz J Biol 75:989–998. https://doi.org/10.1590/1519-6984.04914
+
+Article
+ 
+CAS
+ 
+PubMed
+ 
+Google Scholar
+ 
+
+Carson R (1962) Silent Spring. Houghton Mifflin: Greenburg
+
+Ceballos G, Ehrlich PR, Raven PH (2020) Vertebrates on the brink as indicators of biological annihilation and the sixth mass extinction. Proc Natl Acad Sci 117:13596–13602. https://doi.org/10.1073/pnas.1922686117
+
+Article
+ 
+CAS
+ 
+PubMed
+ 
+PubMed Central
+ 
+Google Scholar
+ 
+
+Costa Lima AM (1935) Novo ichneumonideo parasito de Papilio anchisiades capys (Hübner). O Campo 6:20–21
+
+Google Scholar
+ 
+
+Costa Lima AM (1936) Terceiro catálogo dos insectos que vivem nas plantas do Brasil. Ministério da Agricultura, Rio de Janeiro
+
+Google Scholar
+ 
+
+Costa Lima AM (1937) Uma nova espécie de Diapetimorpha (Hymenoptera: Ichneumonoidea). Mem Inst Oswaldo Cruz 32:539–541
+
+Article
+ 
+Google Scholar
+ 
+
+Costa Lima AM (1945) Sobre dois insetos galicolas (Curculionidae–Cryptorhynchinae e Ichneumonidae–Pimplinae). Boletim Da Sociedade Brasileira De Agronomia 8:189–192
+
+Google Scholar
+ 
+
+Costa Lima AM (1951) Sobre algumas vespas parasitas da família Ichneumonidae (Hymenoptera). Pap Avulsos Zool 9:367–374. https://doi.org/10.11606/0031-1049.1951.9p367-374
+
+Article
+ 
+Google Scholar
+ 
+
+Costa Lima AM (1953) Espécies de Eiphosoma Cresson (Hymenoptera, Ichneumonidae, Ophioninae). Arquivos Do Museu Nacional Rio De Janeiro 42:175–189
+
+Google Scholar
+ 
+
+Costa Lima AM (1962) Insetos do Brasil 12° Tomo Capítulo XXX Himenopteros 2.aparte. Escola Nacional de Agronomia, Série Didática
+
+Cowie RH, Bouchet P, Fontaine B (2022) The Sixth Mass Extinction: fact, fiction or speculation? Biol Rev 97:640–663. https://doi.org/10.1111/brv.12816
+
+Article
+ 
+PubMed
+ 
+Google Scholar
+ 
+
+Cruz I, Figueiredo ML, Gonçalves EP et al (1997a) Effect of age of Spodoptera frugiperda (Smith) larvae (Lepidoptera: Noctuidae) on the performance of the parasitoid Campoletis flavicincta (Ashmead) (Hymenoptera: Ichneumonidae) and foliar consumption of parasitized and non-parasitized larvae. An Soc Entomol Brasil 26:229–234. https://doi.org/10.1590/S0301-80591997000200003
+
+Article
+ 
+Google Scholar
+ 
+
+Cruz I, Figueiredo ML, Valicente FH, Oliveira AC (1997b) Application rate trials with a nuclear polyhedrosis virus to control Spodoptera frugiperda (Smith) on maize. An Soc Entomol Brasil 26:145–152. https://doi.org/10.1590/S0301-80591997000100019
+
+Article
+ 
+Google Scholar
+ 
+
+Dequech STB, Silva RFPD, Fiuza LM (2004) Ocorrência de parasitóides de Spodoptera frugiperda (J. E. Smith) (Lep., Noctuidae) em lavouras de milho em Cachoeirinha. RS Cienc Rural 34:1235–1237. https://doi.org/10.1590/S0103-84782004000400042
+
+Article
+ 
+Google Scholar
+ 
+
+Dormann CF, Gruber B, Fründ J (2008) Introducing the bipartite package: analysing ecological networks. R News 8:8–11
+
+Google Scholar
+ 
+
+Fauteux A, Soares AO, Lucas E (2024) Larval development and voracity of Eupeodes americanus (Diptera: Syrphidae): comparison of the focal prey Aphis gossypii (Hemiptera: Aphididae) and the banker prey Rhopalosiphum padi (Hemiptera: Aphididae). Insect Science 31:575–586. https://doi.org/10.1111/1744-7917.13255
+
+Article
+ 
+PubMed
+ 
+Google Scholar
+ 
+
+Fei M, Gols R, Harvey JA (2023) The biology and ecology of parasitoid wasps of predatory arthropods. Annu Rev Entomol 68:109–128. https://doi.org/10.1146/annurev-ento-120120-111607
+
+Article
+ 
+CAS
+ 
+PubMed
+ 
+Google Scholar
+ 
+
+Fernandes DRR, Santos BF, Padua DG, Araujo RO (2024a) Ichneumonidae. In: Catálogo Taxonômico da Fauna do Brasil. PNUD. http://fauna.jbrj.gov.br/fauna/faunadobrasil/2248. Accessed 05 Nov 2024
+
+Fernandes DRR, Santos BF, Padua DG, Araujo RO (2024b) Refining the Taxonomic Catalog of the Brazilian Fauna: some species of Darwin wasps (Hymenoptera: Ichneumonidae) erroneously reported for Brazil. Zoologia 41:e23104. https://doi.org/10.1590/S1984-4689.v41.e23104
+
+Article
+ 
+Google Scholar
+ 
+
+Figueiredo MDLC, Martins-Dias AMP, Cruz I (2006) Relação entre a lagarta-do-cartucho e seus agentes de controle biológico natural na produção de milho. Pesq Agropec Bras 41:1693–1698. https://doi.org/10.1590/S0100-204X2006001200002
+
+Article
+ 
+Google Scholar
+ 
+
+Forbes AA, Bagley RK, Beer MA et al (2018) Quantifying the unquantifiable: why Hymenoptera, not Coleoptera, is the most speciose animal order. BMC Ecol 18:21. https://doi.org/10.1186/s12898-018-0176-x
+
+Article
+ 
+PubMed
+ 
+PubMed Central
+ 
+Google Scholar
+ 
+
+Francisco SCC, Renne DGDS, Jacques GDC, Souza MMD (2024) Vespas sociais (Vespidae: Polistinae), nidificação e ocorrência de parasitoides no cerrado brasileiro. Acta Biologica Brasiliensia 7:38–51. https://doi.org/10.18554/acbiobras.v7i1.7645
+
+Article
+ 
+Google Scholar
+ 
+
+Gauld ID, Dubois J (2006) Phylogeny of the Polysphincta group of genera (Hymenoptera: Ichneumonidae; Pimplinae): a taxonomic revision of spider ectoparasitoids. Syst Entomol 31:529–564. https://doi.org/10.1111/j.1365-3113.2006.00334.x
+
+Article
+ 
+Google Scholar
+ 
+
+Gonçalves CR (1973) Observações sobre hospedeiros de himenópteros da família ichneumonidae, no Brasil. An Soc Entomol Bras 2:31–36. https://doi.org/10.37486/0301-8059.v2i1.9
+
+Article
+ 
+Google Scholar
+ 
+
+Gonzaga MO, Sobczak JF (2007) Parasitoid-induced mortality of Araneus omnicolor (Araneae, Araneidae) by Hymenoepimecis sp. (Hymenoptera, Ichneumonidae) in southeastern Brazil. Naturwissenschaften 94:223–227. https://doi.org/10.1007/s00114-006-0177-z
+
+Article
+ 
+CAS
+ 
+PubMed
+ 
+Google Scholar
+ 
+
+Gonzaga MO, Sobczak JF (2011) Behavioral manipulation of the orb-weaver spider Argiope argentata (Araneae: Araneidae) by Acrotaphus chedelae (Hymenoptera: Ichneumonidae). Entomological Science 14:220–223. https://doi.org/10.1111/j.1479-8298.2010.00436.x
+
+Article
+ 
+Google Scholar
+ 
+
+Gonzaga MO, Eberhard WG, Penteado-Dias AM, Sobczak JF (2010) Modification of Nephila clavipes (Araneae Nephilidae) webs induced by the parasitoids Hymenoepimecis bicolor and H. robertsae (Hymenoptera Ichneumonidae). Ethol Ecol Evol 22:151–165. https://doi.org/10.1080/03949371003707836
+
+Article
+ 
+Google Scholar
+ 
+
+Hancock GLR (1926) A winter entomological visit to central Brazil. The Entomologist 59:168–170
+
+Google Scholar
+ 
+
+Jeanne RL (1979) Construction and utilization of multiple combs in Polistes canadensis in relation to the biology of a predaceous moth. Behav Ecol Sociobiol 4:293–310. https://doi.org/10.1007/BF00297649
+
+Article
+ 
+Google Scholar
+ 
+
+Kahuthia-Gathu R, Kirubi DT, Gitonga D (2018) Composition and abundance of wood-boring beetles of Acacia xanthophloea and their associated natural enemies in Thika, Kenya. J Asia-Pac Biodivers 11:248–254. https://doi.org/10.1016/j.japb.2018.03.003
+
+Article
+ 
+Google Scholar
+ 
+
+Klopfstein S, Santos BF, Shaw MR et al (2019) Darwin wasps: a new name heralds renewed efforts to unravel the evolutionary history of Ichneumonidae. Entomol Commun 1:ec01006. https://doi.org/10.37486/2675-1305.ec01006
+
+Article
+ 
+Google Scholar
+ 
+
+Kogan M (1998) Integrated pest management: historical perspectives and contemporary developments. Annu Rev Entomol 43:243–270
+
+Article
+ 
+CAS
+ 
+PubMed
+ 
+Google Scholar
+ 
+
+Kriechbaumer J (1898) Die Gattung Joppa. Entomologische Nachrichten 24:1–36
+
+Article
+ 
+Google Scholar
+ 
+
+Lawton JH, Bignell DE, Bolton B et al (1998) Biodiversity inventories, indicator taxa and effects of habitat modification in tropical forest. Nature 391:72–76. https://doi.org/10.1038/34166
+
+Article
+ 
+CAS
+ 
+Google Scholar
+ 
+
+Lazzari SN (1985) Inimigos naturais dos afídeos (Homoptera, Aphididae) da cevada (Hordeun sp.) no Paraná. Anais Da Sociedade Entomologica Do Brasil (Brazil) 14:5–16
+
+Article
+ 
+Google Scholar
+ 
+
+Link D, Diefenthaler CMH (1979) Observações sobre Trachea anguliplaga (Walker, 1858). Rev Centro Ciências Rurais 9:49–54
+
+Google Scholar
+ 
+
+Lorenzato D, Gonçalves HM, Sechin J (1979) Seasonal abundance of and the effect of insecticides on phytophagous species on soyabean (Glycine max (L.) Merr.) and their natural enemies. Agronomia Sulriograndense 15:53–75
+
+Google Scholar
+ 
+
+Lourenção AL, Carvalho LOD, Lasca DHDC (1989) Anacraga citrinopsis Dyar (Lepidoptera: Dalceridae) em mamoneira no estado de São Paulo. Bragantia 48:109–112. https://doi.org/10.1590/S0006-87051989000100010
+
+Article
+ 
+Google Scholar
+ 
+
+Loyola RD, Martins RP (2006) Trap-nest occupation by solitary wasps and bees (Hymenoptera: Aculeata) in a forest urban remanent. Neotrop Entomol 35:41–48. https://doi.org/10.1590/S1519-566X2006000100006
+
+Article
+ 
+PubMed
+ 
+Google Scholar
+ 
+
+Lucchini F, Almeida AA (1980) Parasitas da Spodoptera frugiperda (Smith & Abbot, 1797) (Lep., Noctuidae), lagarta do cartucho do milho, encontrado em Ponta Grossa-PR. Anais da Sociedade Entomológica do Brasil 9:115–121. https://doi.org/10.37486/0301-8059.v9i1.211
+
+Article
+ 
+Google Scholar
+ 
+
+Magurran AE (2021) Measuring biological diversity. Curr Biol 31:R1174–R1177. https://doi.org/10.1016/j.cub.2021.07.049
+
+Article
+ 
+CAS
+ 
+PubMed
+ 
+Google Scholar
+ 
+
+Marchioro CA, Foerster LA (2016) Biotic factors are more important than abiotic factors in regulating the abundance of Plutella xylostella L., in Southern Brazil. Revista Brasileira De Entomologia 60:328–333. https://doi.org/10.1016/j.rbe.2016.06.004
+
+Article
+ 
+Google Scholar
+ 
+
+Marconato G, Dias MM, Penteado-Dias AM (2008) Larvas de Geometridae (Lepidoptera) e seus parasitóides, associadas a Erythroxylum microphyllum St.- Hilaire (Erythroxylaceae). Rev Bras Entomol 52:296–299. https://doi.org/10.1590/S0085-56262008000200010
+
+Article
+ 
+Google Scholar
+ 
+
+Marques AC, Lamas CJE (2006) Taxonomia zoológica no Brasil: estado da arte, expectativas e sugestões de ações futuras. Pap Avulsos Zool 46:13. https://doi.org/10.1590/S0031-10492006001300001
+
+Article
+ 
+Google Scholar
+ 
+
+Massarolli A, Hoffmann ARL, Favetti BM, Butnariu AR (2018) Ichneumonids (Hymenoptera) and tachinid flies (Diptera) associated to leptidopterans in soybean crops. J Agric Sci 10:167–173. https://doi.org/10.5539/jas.v10n7p167
+
+Article
+ 
+Google Scholar
+ 
+
+Moraes RR, Loeck AE, Belarmino LC (1991) Inimigos naturais de Rachiplusia nu (Guenee, 1852) e de Pseudoplusia includens (Walker, 1857)(Lepidoptera: Noctuidae) em soja no Rio Grande do Sul. Pesq Agrop Brasileira 26:57–64
+
+Google Scholar
+ 
+
+Nether MC, Dudek J, Buschini MLT (2019) Trophic interaction and diversity of cavity-nesting bees and wasps (Hymenoptera: Aculeata) in Atlantic forest fragments and in adjacent matrices. Apidologie 50:104–115. https://doi.org/10.1007/s13592-018-0623-x
+
+Article
+ 
+Google Scholar
+ 
+
+Newsom LD (1980) The next rung up the integrated pest management ladder. Bull Entomol Soc Am 26:369–374. https://doi.org/10.1093/besa/26.3.369
+
+Article
+ 
+Google Scholar
+ 
+
+Oliveira PS, Gonçalves RB (2017) Trap-nesting bees and wasps (Hymenoptera, Aculeata) in a Semidecidual Seasonal Forest fragment, southern Brazil. Pap Avulsos Zool 57:149–156. https://doi.org/10.11606/0031-1049.2017.57.13
+
+Article
+ 
+Google Scholar
+ 
+
+Pádua D, Salvatierra L, Sobczak J, Oliveira M (2016) Parasitism of Hymenoepimecis manauara Pádua & Oliveira (Hymenoptera: Ichneumonidae: Pimplinae) on Leucauge henryi Mello-Leitão (Araneae: Tetragnathidae) in Brazilian Amazonian. BDJ 4:e11219. https://doi.org/10.3897/BDJ.4.e11219
+
+Article
+ 
+Google Scholar
+ 
+
+Pádua DG, Kloss TG, Tavares MT et al (2022) Hyperparasitoids of polysphinctine Darwin wasps (Hymenoptera: Ichneumonidae) in South America. Austral Entomol 61:170–186. https://doi.org/10.1111/aen.12593
+
+Article
+ 
+Google Scholar
+ 
+
+Parker HL, Berry PA, Silveira Guido A (1953) Host-parasite and parasite-host lists of insects reared in the South American Parasite Laboratory during the period 1940–1946. Revista De La Asociacion De Ingeniera Agronomica 92:15–112
+
+Google Scholar
+ 
+
+Parra JRP (2010) Mass rearing of egg parasitoids for biological control programs. In: Consoli FL, Parra JRP, Zucchi RA (eds) Egg parasitoids in agroecosystems with emphasis on trichogramma. Springer, Netherlands, Dordrecht, pp 267–292
+
+Google Scholar
+ 
+
+Parra JRP, Botelho PSM, Correa-Ferreira BS, Bento JMS (2002) Controle biológico no Brasil: parasitóides e predadores. Manole
+
+Patel PN, Habib MM (1984) Levantamento e eficiencia de insetos parasitos de Spodoptera frugiperda (Abbot et Smith, 1797)(Lepidoptera, Noctuidae). Revista de Agricultura 59:229–237. https://doi.org/10.37856/bja.v59i3.633
+
+Article
+ 
+Google Scholar
+ 
+
+Penteado-Dias A (1991) Himenópteros parasitóides associados a ninhos de Digelasinus diversipes (Kirby, 1882) (Hymenoptera, Argidae). Rev Bras Entomol 35:545–548
+
+Google Scholar
+ 
+
+Porter CC (1967) A revision of the south American species of Trachysphyrus. Mem Am Entomol Inst 10:1–368
+
+Google Scholar
+ 
+
+Poulin R (2011) Chapter 1 - the many roads to parasitism: a tale of convergence. In: Rollinson D, Hay SI (eds) Advances in Parasitology. Academic Press, pp 1–40
+
+Google Scholar
+ 
+
+Quicke DLJ (2014) The braconid and ichneumonid parasitoid wasps: biology, systematics, evolution and ecology. John Wiley & Sons
+
+Book
+ 
+Google Scholar
+ 
+
+Resende ALS, Silva EE, Silva VB et al (2006) Primeiro registro de Lipaphis pseudobrassicae Davis (Hemiptera: Aphididae) e sua associação com insetos predadores, parasitóides e formigas em couve (Cruciferae) no Brasil. Neotrop Entomol 35:551–555. https://doi.org/10.1590/S1519-566X2006000400019
+
+Article
+ 
+PubMed
+ 
+Google Scholar
+ 
+
+Ribeiro LP, Dequech STB, da Silva RFP, Fiuza LM (2017) Modulação da razão sexual de Campoletis flavicincta (Hymenoptera: Ichneumonidae) em criação artificial. Agropecuária Catarinense 30:74–77
+
+Article
+ 
+Google Scholar
+ 
+
+Rocha-Filho LC, Rabelo LS, Augusto SC, Garófalo CA (2017) Cavity-nesting bees and wasps (Hymenoptera: Aculeata) in a semi-deciduous Atlantic forest fragment immersed in a matrix of agricultural land. J Insect Conserv 21:727–736. https://doi.org/10.1007/s10841-017-0016-x
+
+Article
+ 
+Google Scholar
+ 
+
+Rocha-Filho LC, Moure-Oliveira D, de Miranda CS et al (2019) Diversity and host–parasite interactions of cavity-nesting Hymenoptera communities in the Brazilian Savannah. J Insect Conserv 23:651–665. https://doi.org/10.1007/s10841-019-00157-7
+
+Article
+ 
+Google Scholar
+ 
+
+Rocha-Filho LC, Montagnana PC, Boscolo D, Garófalo CA (2020) Green patches among a grey patchwork: the importance of preserving natural habitats to harbour cavity-nesting bees and wasps (Hymenoptera) and their natural enemies in urban areas. Biodivers Conserv 29:2487–2514. https://doi.org/10.1007/s10531-020-01985-9
+
+Article
+ 
+Google Scholar
+ 
+
+Santos AD, Taxonomic study of the Brazilian species of Charops Holmgren, 1859 (Ichneumonidae, Campopleginae). Dissertation, University of São Paulo
+
+Sauer H (1946) Constatação de himenópteros e dípteros entomófagos no Estado de São Paulo. Boletím Fitossanitário 3:7–23
+
+Google Scholar
+ 
+
+Shaw MR (1997) Rearing parasitic Hymenoptera. The Amateur. Entomologist 25:1–46
+
+Google Scholar
+ 
+
+Shaw MR (2023) Obtaining, recording and using host data for reared parasitoid wasps (Hymenoptera). Br J Entomol Nat Hist 36:205–213
+
+Google Scholar
+ 
+
+Shaw MR, Hochberg ME (2001) The neglect of parasitic hymenoptera in insect conservation strategies: the British fauna as a prime example. J Insect Conserv 5:253–263. https://doi.org/10.1023/A:1013393229923
+
+Article
+ 
+Google Scholar
+ 
+
+Silva F, Fowler HG, Lemos RN (1997) Parasitismo em lagarta-do-cartucho, Spodoptera frugiperda (Smith), na região do Triângulo Mineiro, MG. An Soc Entomol Brasil 26:235–241. https://doi.org/10.1590/S0301-80591997000200004
+
+Article
+ 
+Google Scholar
+ 
+
+Silva RB, Cruz I, Figueiredo MLC et al (2012) Record of new species of parasitoids on larvae of Spodoptera frugiperda (J. E. Smith) (Lepidoptera: Noctuidae) and Dichomeris famulata Meyrick (Lepidoptera: Gelechiidae) in Maize (Zea mays L.) in Brazil. Revista Brasileira de Milho e Sorgo 11:115–119. https://doi.org/10.18512/1980-6477/rbms.v11n1p115-119
+
+Article
+ 
+Google Scholar
+ 
+
+Silva RC, Silva AP, Assis DS, Nascimento FS (2019) Primeiro registro da vespa parasitoide Pachysomoides, associada a ninhos de Mischocyttarus cerberus e alguns comentários sobre o comportamento da espécie de vespa parasitoide. Rev Bras Zoociências 20:1–7. https://doi.org/10.34019/2596-3325.2019.v20.24794
+
+Article
+ 
+Google Scholar
+ 
+
+Silva A, Gonçalves CR, Galvão DM, et al (1968) Quarto catálogo dos insetos que vivem nas plantas do Brasil: seus parasitos e predadores: insetos, hospedeiros e inimigos naturais. Part. II. Ministério da Agricultura, Rio de Janeiro
+
+Silva-Filho R, Rodrigues Cassino PC, Marques OM et al (2007) Parasitoids of Polistes lanio lanio (Hymenoptera: Vespidae) larvae in the municipality of Seropédica, Rio de Janeiro State, Brazil. Sociobiology 50:1191–1198
+
+Google Scholar
+ 
+
+Silveira LF, Beisiegel BM, Curcio FF et al (2010) What use do inventories of fauna serve. Estudos Avançados 24:173–207
+
+Article
+ 
+Google Scholar
+ 
+
+Singh A (2021) Attack by a common parasitoid stabilizes population dynamics of multi-host communities. J Theor Biol 531:110897. https://doi.org/10.1016/j.jtbi.2021.110897
+
+Article
+ 
+PubMed
+ 
+Google Scholar
+ 
+
+Soares MA, Gutierrez CT, Zanuncio JC et al (2006) Pachysomoides sp. (Hymenoptera: Ichneumonidae: Cryptinae) and Megaselia scalaris (Diptera: Phoridae) parasitoids of Mischocyttarus cassununga (Hymenoptera: Vespidae) in Viçosa, Minas Gerais State, Brazil. Sociobiol 48:673–680
+
+Google Scholar
+ 
+
+Sobczak JF, Loffredo APS, Penteado-Dias AM, Gonzaga MO (2009) Two new species of Hymenoepimecis (Hymenoptera: Ichneumonidae: Pimplinae) with notes on their spider hosts and behaviour manipulation. J Nat Hist 43:2691–2699. https://doi.org/10.1080/00222930903244010
+
+Article
+ 
+Google Scholar
+ 
+
+Sobczak J, Messas YF, Padua DG (2017) Parasitism of Zatypota riverai Gauld (Hymenoptera: Ichneumonidae: Pimplinae) on Anelosimus baeza Agnarsson (Araneae: Theridiidae) in northeast Brazil, with a description of the male. Zootaxa 4247:78–82. https://doi.org/10.11646/zootaxa.4247.1.11
+
+Article
+ 
+PubMed
+ 
+Google Scholar
+ 
+
+Sobczak JF, Arruda IDP, de Pádua DG, Villanueva-Bonilla GA (2019) Parasitism in Theridion sp. (Araneae: Theridiidae) by Zatypota riverai Gauld, 1991 (Hymenoptera: Ichneumonidae: Pimplinae). The Journal of Arachnology 47:266–270. https://doi.org/10.1636/JoA-S-18-103
+
+Article
+ 
+Google Scholar
+ 
+
+Sobczak JF, Xavier GM, Gonzaga MO, Penteado-Dias AM (2023) Host size selection and progeny sex determination in Hymenoepimecis bicolor (Hymenoptera, Ichneumonidae, Pimplinae). Ethology 129:280–287. https://doi.org/10.1111/eth.13365
+
+Article
+ 
+Google Scholar
+ 
+
+Sobczak JF (2012) Description of the male Hymenoepimecis japi Sobczak et al. 2009 (Hymenoptera, Ichneumonidae) parasitoid of Leucauge roseosignata Mello-Leitão 1943 (Araneae: Tetragnathidae). Braz J Biol 72:945–947. https://doi.org/10.1590/S1519-69842012000500023
+
+Sobczak JF, Villanueva-Bonilla GA, Padua DG, Messas YF (2017b) The wasp Flacopimpla varelae Gauld (Ichneumonidae: Pimplinae), parasitoid of the spider Achaearanea tingo Levi (Theridiidae: Theridiinae), with description of the male wasp. Zootaxa 4365:594–599. https://doi.org/10.11646/zootaxa.4365.5.7
+
+Sociedade Entomológica do Brasil (2024) Histórico. https://www.seb.org.br/historico. Accessed 2 Nov 2024
+
+Somavilla A, Schoeninger K, Carvalho AF, et al (2015) Record of parasitoids in nests of social wasps (Hymenoptera: Vespidae: Polistinae). Sociobiology 62:92–98. https://doi.org/10.13102/sociobiology.v62i1.92-98
+
+Souza-Dias BF (1976) Comportamento pre-social de sinfitas do Brasil central. II. Dielocerus diasi Smith, 1975 (Hymenoptera, Argidae). Stud Entomol 19:461–501
+
+Google Scholar
+ 
+
+Tavares WS, Penteado-Dias AM, Souza MM et al (2013) Pachysomoides sp. (Hymenoptera: Ichneumonidae: Cryptinae) parasitizing Polistes versicolor (Hymenoptera: Vespidae) in Viçosa, Minas Gerais State, Brazil. Entomol Am 119:80–84. https://doi.org/10.1664/12-RA-003.1
+
+Article
+ 
+Google Scholar
+ 
+
+Tedesco AM, Aguiar AP (2013) Phylogeny and revision of Toechorychus Townes (Hymenoptera, Ichneumonidae, Cryptinae), with descriptions of thirty-five new species. Zootaxa 3633:1–138. https://doi.org/10.11646/zootaxa.3633.1.1
+
+Article
+ 
+PubMed
+ 
+Google Scholar
+ 
+
+Terry C (2018) bipartiteD3: Interactive bipartite graphs. R package version 01 0 Website https://CRAN.R-project.org/package=bipartiteD3
+
+Tougeron K, Tena A (2019) Hyperparasitoids as new targets in biological control in a global change context. Biol Control 130:164–171. https://doi.org/10.1016/j.biocontrol.2018.09.003
+
+Article
+ 
+Google Scholar
+ 
+
+Townes HK, Townes M (1966) A catalogue and reclassification of the Neotropic Ichneumonidae. Mem Am Entomol Insts 8:1–367
+
+Google Scholar
+ 
+
+Vargas RI, Piñero JC, Leblanc L (2015) An overview of pest species of Bactrocera fruit flies (Diptera: Tephritidae) and the integration of biopesticides with other biological approaches for their management with a focus on the Pacific Region. Insects 6:297–318. https://doi.org/10.3390/insects6020297
+
+Article
+ 
+PubMed
+ 
+PubMed Central
+ 
+Google Scholar
+ 
+
+Veijalainen A, Wahlberg N, Broad GR et al (2012) Unprecedented ichneumonid parasitoid wasp diversity in tropical forests. Proc R Soc B 279:4694–4698. https://doi.org/10.1098/rspb.2012.1664
+
+Article
+ 
+PubMed
+ 
+PubMed Central
+ 
+Google Scholar
+ 
+
+Villanueva-Bonilla GA, Onody HC, Santos BF, Vasconcellos-Neto J (2016) First record of egg sac predation on a wall crab spider Selenopidae (Araneae) by the wasp Camera lunavenatrix sp. n. (Ichneumonidae, Cryptinae). JHR 49:65–79. https://doi.org/10.3897/JHR.49.7862
+
+Article
+ 
+Google Scholar
+ 
+
+Wickham H (2016) Data analysis. In: Wickham H (ed) ggplot2: elegant graphics for data analysis. Springer International Publishing, Cham, pp 189–201
+
+Chapter
+ 
+Google Scholar
+ 
+
+Yu DSK, van Achterberg C, Horstmann K (2016) Taxapad 2016, Ichneumonoidea 2015. Database on flash-drive. www.taxapad.com, Nepean, Ontario, Canada
