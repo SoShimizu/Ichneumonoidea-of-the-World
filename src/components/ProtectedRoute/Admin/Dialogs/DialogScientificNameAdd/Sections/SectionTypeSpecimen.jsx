@@ -1,5 +1,4 @@
-// src/components/ProtectedRoute/Admin/Dialogs/DialogScientificNameAdd/Sections/SectionTypeSpecimen.jsx (修正・完成版)
-import React from 'react';
+import React, { useCallback } from 'react';
 import {
   Box,
   TextField,
@@ -10,20 +9,17 @@ import {
   Typography,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
-// ★★★ 1. RepositorySelectorをインポート ★★★
 import RepositorySelector from '../../parts/RepositorySelector';
 
 const TypeSpecimenSection = ({
   form,
-  handleChange, // handleChangeを直接使用
+  handleChange,
   errors,
   typeCategories,
   onShowAddTypeCategory,
   countriesList,
   RanksNoLocalityConst,
-  // repositories, // 不要になるため削除
-  // onShowRepoDialog, // 不要になるため削除
-  combinedNames,
+  scientificNameData,
   imgRows,
   handleImgRowChange,
   addImgRow,
@@ -33,6 +29,13 @@ const TypeSpecimenSection = ({
   const isLocalityDisabled =
     form.current_rank &&
     RanksNoLocalityConst.includes(form.current_rank.toLowerCase());
+
+  // ★★★ 無限ループを防ぐための最も重要な修正 ★★★
+  // RepositorySelectorに渡すonChange関数をuseCallbackでラップし、不要な再生成を防ぎます。
+  const handleRepositoryChange = useCallback((newValue) => {
+    // 親から渡された安定化済みのhandleChangeを呼び出します
+    handleChange('type_repository_id', newValue);
+  }, [handleChange]);
 
   return (
     <Box>
@@ -83,11 +86,11 @@ const TypeSpecimenSection = ({
 
       {/* Type Locality */}
       <Autocomplete
-        options={countriesList.sort((a, b) => a.id.localeCompare(b.id))}
-        getOptionLabel={(c) => c?.id || ''}
-        value={countriesList.find((c) => c.id === form.type_locality) || null}
-        onChange={(e, val) => handleChange('type_locality', val?.id || null)}
-        isOptionEqualToValue={(option, value) => option?.id === value?.id}
+        options={countriesList.map(c => c.id).sort()}
+        getOptionLabel={(c) => c || ''}
+        value={form.type_locality || null}
+        onChange={(e, val) => handleChange('type_locality', val || null)}
+        isOptionEqualToValue={(option, value) => option === value}
         disabled={isLocalityDisabled}
         renderInput={(params) => (
           <TextField
@@ -102,15 +105,15 @@ const TypeSpecimenSection = ({
         sx={{ mb: 2, mt: 1 }}
       />
 
-      {/* ★★★ 2. Type Repository を RepositorySelector に置き換え ★★★ */}
+      {/* Type Repository */}
       <RepositorySelector
-        value={form.type_repository_id || null} // DBカラム名 'type_repository_id' に合わせる
-        onChange={(newValue) => handleChange('type_repository_id', newValue)}
+        value={form.type_repository_id || null}
+        onChange={handleRepositoryChange}
       />
 
       {/* Type Host */}
       <Autocomplete
-        options={combinedNames}
+        options={(scientificNameData || []).map(s => s.id)}
         value={form.type_host || null}
         onChange={(e, v) => handleChange('type_host', v || null)}
         isOptionEqualToValue={(option, value) => option === value}

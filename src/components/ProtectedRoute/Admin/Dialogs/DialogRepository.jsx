@@ -4,7 +4,6 @@ import {
 } from '@mui/material';
 import supabase from '../../../../utils/supabase';
 
-// ★★★ `initialValue` prop を受け取れるように変更 ★★★
 const DialogRepository = ({ open, onClose, repository, initialValue = '' }) => {
   const [formData, setFormData] = useState({
     acronym: '',
@@ -16,14 +15,23 @@ const DialogRepository = ({ open, onClose, repository, initialValue = '' }) => {
   });
   const [allRepositories, setAllRepositories] = useState([]);
   const [loading, setLoading] = useState(false);
+  // ★★★ 1. 未定義だった `countriesList` の state を追加 ★★★
+  const [countriesList, setCountriesList] = useState([]);
 
   useEffect(() => {
     const fetchAllRepos = async () => {
       const { data } = await supabase.from("Repositories").select('uuid, acronym, name_en');
       if (data) setAllRepositories(data);
     };
+    // ★★★ 2. 国名リストを取得する処理を追加 ★★★
+    const fetchCountries = async () => {
+        const { data } = await supabase.from('countries').select('id');
+        if (data) setCountriesList(data.map(c => c.id));
+    };
+
     if (open) {
       fetchAllRepos();
+      fetchCountries(); // ダイアログが開くときに国名も取得
       if (repository) {
         setFormData({
           acronym: repository.acronym || '',
@@ -34,7 +42,6 @@ const DialogRepository = ({ open, onClose, repository, initialValue = '' }) => {
           city: repository.city || '',
         });
       } else {
-        // ★★★ 新規追加時、`initialValue` を acronym の初期値に設定 ★★★
         setFormData({ 
             acronym: initialValue, 
             name_en: '', 
@@ -47,16 +54,19 @@ const DialogRepository = ({ open, onClose, repository, initialValue = '' }) => {
     }
   }, [repository, open, initialValue]);
 
-  // (handleChange と handleSubmit のロジックは変更なし)
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
+  const handleAutocompleteChange = (field, value) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
   const handleSubmit = async () => {
     setLoading(true);
-    let error;
-    let newRecordUuid = null;
+    let finalError;
+    let finalRepoData = null;
 
     const saveData = {
         acronym: formData.acronym,
@@ -68,40 +78,48 @@ const DialogRepository = ({ open, onClose, repository, initialValue = '' }) => {
     };
 
     if (repository) { // Edit mode
-      const { error: updateError } = await supabase
+      const { data, error } = await supabase
         .from('Repositories')
         .update(saveData)
-        .match({ uuid: repository.uuid });
-      error = updateError;
+        .eq('uuid', repository.uuid)
+        .select(`*, parent:parent_id(*)`)
+        .single();
+      finalError = error;
+      finalRepoData = data;
     } else { // Add mode
-      const { data: newRecord, error: insertError } = await supabase
+      const { data, error } = await supabase
         .from('Repositories')
         .insert([saveData])
-        .select('uuid')
+        .select()
         .single();
       
-      error = insertError;
-      if (newRecord) {
-        newRecordUuid = newRecord.uuid;
-      }
-    }
-
-    if (!error && newRecordUuid && !formData.parent_id) {
-      const { error: selfParentError } = await supabase
-        .from('Repositories')
-        .update({ parent_id: newRecordUuid })
-        .match({ uuid: newRecordUuid });
-      
-      if (selfParentError) {
-        error = selfParentError;
+      finalError = error;
+      if (data && !data.parent_id) {
+        const { data: updatedData, error: selfParentError } = await supabase
+          .from('Repositories')
+          .update({ parent_id: data.uuid })
+          .eq('uuid', data.uuid)
+          .select(`*, parent:parent_id(*)`)
+          .single();
+        finalError = selfParentError;
+        finalRepoData = updatedData;
+      } else if (data) {
+        const { data: withParentData, error: parentError } = await supabase
+          .from('Repositories')
+          .select(`*, parent:parent_id(*)`)
+          .eq('uuid', data.uuid)
+          .single();
+        finalError = parentError;
+        finalRepoData = withParentData;
       }
     }
 
     setLoading(false);
-    if (error) {
-      alert('Error saving repository: ' + error.message);
+    if (finalError) {
+      alert('Error saving repository: ' + finalError.message);
+      onClose(false, null);
     } else {
-      onClose(true);
+      onClose(true, finalRepoData);
     }
   };
 
@@ -112,7 +130,19 @@ const DialogRepository = ({ open, onClose, repository, initialValue = '' }) => {
         <TextField autoFocus margin="dense" name="acronym" label="Acronym (e.g., NIAES, NARO)" type="text" fullWidth variant="outlined" value={formData.acronym} onChange={handleChange} required />
         <TextField margin="dense" name="name_en" label="Official Name (English)" type="text" fullWidth variant="outlined" value={formData.name_en} onChange={handleChange} />
         <TextField margin="dense" name="taxapad_code" label="Taxapad Code" type="text" fullWidth variant="outlined" value={formData.taxapad_code} onChange={handleChange} />
-        <TextField margin="dense" name="country" label="Country" type="text" fullWidth variant="outlined" value={formData.country} onChange={handleChange} />
+        
+        {/* ★★★ 3. `countriesList` を使ってオートコンプリートを表示 ★★★ */}
+        <Autocomplete
+          options={countriesList.sort()}
+          value={formData.country || null}
+          onChange={(event, newValue) => {
+            handleAutocompleteChange('country', newValue);
+          }}
+          renderInput={(params) => (
+            <TextField {...params} margin="dense" label="Country" fullWidth />
+          )}
+        />
+
         <TextField margin="dense" name="city" label="City" type="text" fullWidth variant="outlined" value={formData.city} onChange={handleChange} />
         <Autocomplete
           sx={{ mt: 2 }}
@@ -120,10 +150,10 @@ const DialogRepository = ({ open, onClose, repository, initialValue = '' }) => {
           getOptionLabel={(option) => `${option.acronym} — ${option.name_en}`}
           value={allRepositories.find(r => r.uuid === formData.parent_id) || null}
           onChange={(event, newValue) => {
-            setFormData(prev => ({ ...prev, parent_id: newValue ? newValue.uuid : null }));
+            handleAutocompleteChange('parent_id', newValue ? newValue.uuid : null);
           }}
           renderInput={(params) => (
-            <TextField {...params} label="Valid Name (Parent)" margin="dense" helperText="If this is a synonym (e.g., NIAES), select its current valid name (e.g., NARO). If this is a valid name, leave it blank."/>
+            <TextField {...params} label="Valid Name (Parent)" margin="dense" helperText="If this is a synonym, select its current valid name. If this is a valid name, leave it blank."/>
           )}
         />
       </DialogContent>
