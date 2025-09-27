@@ -20,6 +20,7 @@ import ConsoleBionomicRecords from "./components/ProtectedRoute/Admin/Consoles/C
 import ScrollTopButton from "./components/ScrollTopButton";
 import ScientificNameDetailsPage from "./components/pages/ScientificNameDetailsPage";
 import AdminTeam from "./components/pages/AdminTeam/AdminTeam";
+import ConsoleRepositories from "./components/ProtectedRoute/Admin/Consoles/ConsoleRepositories";
 
 export default function App() {
   return (
@@ -65,7 +66,11 @@ export default function App() {
         <Route path="/admin/console-bionomics" element={<ProtectedRoute>
             <ConsoleBionomicRecords />
             
-        </ProtectedRoute>} />
+          </ProtectedRoute>} />
+          
+          <Route path="/admin/console-repositories" element={<ProtectedRoute>
+            <ConsoleRepositories />
+          </ProtectedRoute>} />
         
 
         {/*

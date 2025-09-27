@@ -158,6 +158,7 @@ export default function Header() {
                     <MenuItem onClick={() => handleNavigate("/admin/console-scientific-names")}>Scientific Name Data Console</MenuItem>
                     <MenuItem onClick={() => handleNavigate("/admin/console-taxonomic-acts")}>Taxonomic Acts Data Console</MenuItem>
                     <MenuItem onClick={() => handleNavigate("/admin/console-bionomics")}>Bionomics Data Console</MenuItem>
+                    <MenuItem onClick={() => handleNavigate("/admin/console-repositories")}>Repositories Data Console</MenuItem>
                   </Menu>
 
                   <Stack direction="row" spacing={1} alignItems="center" sx={{ ml: 2 }}>

@@ -12,6 +12,7 @@
     "@mui/icons-material": "^7.0.1",
     "@mui/lab": "^7.0.0-beta.10",
     "@mui/material": "^7.0.1",
+    "@mui/x-data-grid": "^8.12.1",
     "@supabase/supabase-js": "^2.49.4",
     "@testing-library/dom": "^10.4.0",
     "@testing-library/jest-dom": "^6.6.3",
@@ -39,6 +40,8 @@
     "react-sortablejs": "6.0.3",
     "recharts": "^2.15.2",
     "sortablejs": "1.15.2",
+    "supabase": "^2.45.5",
+    "use-debounce": "^10.0.6",
     "web-vitals": "^2.1.4",
     "zod": "^3.24.2"
   },
