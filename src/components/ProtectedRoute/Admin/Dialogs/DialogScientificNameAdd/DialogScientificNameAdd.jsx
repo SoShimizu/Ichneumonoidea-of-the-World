@@ -9,22 +9,20 @@ import supabase from "../../../../../utils/supabase";
 import fetchSupabaseAllWithOrdering from "../../../../../utils/fetchSupabaseAllWithOrdering";
 
 // Sub-Dialogs and Components
-import DialogAuthorAdd          from "../DialogAuthorAdd";
-import DialogRepository         from "../DialogRepository";
-import DialogPublicationAdd     from "../DialogPublicationAdd";
-import AuditLogUpdater          from "../../../AuditLogUpdater/AuditLogUpdater";
-import LoadingScreen            from "../../../../LoadingScreen";
-import DialogTypeCategoryAdd    from "../DialogTypeCategoryAdd";
+import DialogPublicationAdd from "../DialogPublicationAdd";
+import AuditLogUpdater from "../../../AuditLogUpdater/AuditLogUpdater";
+import LoadingScreen from "../../../../LoadingScreen";
+import DialogTypeCategoryAdd from "../DialogTypeCategoryAdd";
 
 // --- Section Components ---
-import SectionIdSource        from "./Sections/SectionIdSource";
-import SectionNameSpelling    from "./Sections/SectionNameSpelling";
-import SectionZooBank         from "./Sections/SectionZooBank";
-import SectionAuthority       from "./Sections/SectionAuthority";
-import SectionTaxonomy        from "./Sections/SectionTaxonomy";
-import SectionRelationship    from "./Sections/SectionRelationship";
-import SectionTypeSpecimen    from "./Sections/SectionTypeSpecimen";
-import SectionOtherInfo       from "./Sections/SectionOtherInfo";
+import SectionIdSource from "./Sections/SectionIdSource";
+import SectionNameSpelling from "./Sections/SectionNameSpelling";
+import SectionZooBank from "./Sections/SectionZooBank";
+import SectionAuthority from "./Sections/SectionAuthority";
+import SectionTaxonomy from "./Sections/SectionTaxonomy";
+import SectionRelationship from "./Sections/SectionRelationship";
+import SectionTypeSpecimen from "./Sections/SectionTypeSpecimen";
+import SectionOtherInfo from "./Sections/SectionOtherInfo";
 import useFetchScientificNames from "../../myHooks/useFetchScientificNames";
 
 /* ――― 定数 ――― */
@@ -53,7 +51,6 @@ export default function DialogScientificNameAdd({ onClose }) {
     valid_name_id: null,
     type_taxa_id: null,
     type_locality: null,
-    // ★★★ データベースのUUIDスキーマに合わせてstate名を修正 ★★★
     type_repository_id: null,
     type_host: null,
     page: "",
@@ -67,10 +64,7 @@ export default function DialogScientificNameAdd({ onClose }) {
   const [auditLogProps, setAuditLogProps] = useState(null);
   const [validNameRadio, setValidNameRadio] = useState("");
   const [typeTaxaRadio, setTypeTaxaRadio] = useState("");
-  const [allAuthors, setAllAuthors] = useState([]);
   const [selectedAuthors, setSelectedAuthors] = useState([]);
-  const [authorInputValue, setAuthorInputValue] = useState("");
-  const [showAddAuthor, setShowAddAuthor] = useState(false);
   const [ranks, setRanks] = useState([]);
   const [names, setNames] = useState([]);
   const [statuses, setStatuses] = useState([]);
@@ -88,22 +82,11 @@ export default function DialogScientificNameAdd({ onClose }) {
   }, []);
 
   const { scientificNames, refresh } = useFetchScientificNames();
-  
-  const combinedNames = useMemo(() => {
-    const trimmedId = form.id?.trim();
-    const validNames = Array.isArray(names) && names.every(item => typeof item === 'string') ? names : [];
-    if (trimmedId && !validNames.includes(trimmedId)) {
-        return [...validNames, trimmedId].sort();
-    }
-    return [...validNames].sort();
-  }, [names, form.id]);
 
   /* ────────────── handlers ────────────── */
-  // ★★★ 無限ループを解決するための最も重要な修正 ★★★
-  // この関数は、親コンポーネントが再描画されても再生成されないようにuseCallbackで安定化させます。
   const handleChange = useCallback((field, value) => {
     setForm(prev => ({ ...prev, [field]: value }));
-  }, []); // 依存配列は空でOK (setFormはReactによって安定性が保証されているため)
+  }, []);
 
   const fetchOptions = useCallback(async () => {
     setLoading(true);
@@ -118,10 +101,8 @@ export default function DialogScientificNameAdd({ onClose }) {
       } else {
         setNames([]);
       }
-      
-      // ★★★ RepositorySelectorが自身でデータを取得するため、ここでのrepositories取得は削除 ★★★
-      const [authorsRes, ranksRes, statusesRes, pubsRes, countriesRes, typeCatsRes] = await Promise.all([
-        supabase.from("researchers").select("id, first_name_eng, last_name_eng").order("last_name_eng"),
+
+      const [ranksRes, statusesRes, pubsRes, countriesRes, typeCatsRes] = await Promise.all([
         supabase.from("rank").select("id").order("id"),
         supabase.from("extant_fossil").select("id").order("id"),
         supabase.from("publications").select(`id, title_english, publication_date, volume, number, page, journal:journal_id(name_english), publications_authors(author_order, authors(last_name_eng))`).order("id"),
@@ -129,7 +110,6 @@ export default function DialogScientificNameAdd({ onClose }) {
         supabase.from("type_categories").select("*").order("id"),
       ]);
 
-      if (authorsRes.error) console.error("Error fetching authors:", authorsRes.error); else setAllAuthors(authorsRes.data || []);
       if (ranksRes.error) console.error("Error fetching ranks:", ranksRes.error); else setRanks((ranksRes.data || []).map(d => d.id));
       if (statusesRes.error) console.error("Error fetching statuses:", statusesRes.error); else setStatuses((statusesRes.data || []).map(d => d.id));
       if (pubsRes.error) console.error("Error fetching publications:", pubsRes.error); else setPublications(pubsRes.data || []);
@@ -169,22 +149,6 @@ export default function DialogScientificNameAdd({ onClose }) {
     setTypeTaxaRadio(newRadioValue);
     if (newRadioValue === "own") handleChange("type_taxa_id", trimmedId || null);
   };
-
-  const handleAuthorAdd = useCallback((newAuthor) => {
-    if (newAuthor) {
-      if (!allAuthors.some(a => a.id === newAuthor.id)) {
-        setAllAuthors(prev => [...prev, newAuthor].sort((a, b) => a.last_name_eng.localeCompare(b.last_name_eng)));
-      }
-      if (!selectedAuthors.some(a => a.id === newAuthor.id)) {
-        setSelectedAuthors(prev => [...prev, newAuthor]);
-      }
-    }
-    setShowAddAuthor(false);
-  }, [allAuthors, selectedAuthors]);
-
-  const handleAuthorRemove = useCallback((idToRemove) => {
-    setSelectedAuthors(prev => prev.filter(a => a.id !== idToRemove));
-  }, []);
 
   const handleClosePublicationDialog = useCallback((refresh = false) => {
     setShowAddPublication(false);
@@ -226,21 +190,21 @@ export default function DialogScientificNameAdd({ onClose }) {
   };
 
   const retryUpdateScientificName = useCallback(async (payload, id, maxRetries = 3, delay = 1000) => {
-      for (let attempt = 1; attempt <= maxRetries; attempt++) {
-        const { error } = await supabase.from("scientific_names").update(payload).eq("id", id);
-        if (!error) return true;
-        console.warn(`Update attempt ${attempt} for ${id} failed: ${error.message}`);
-        if (attempt < maxRetries) await new Promise(res => setTimeout(res, delay * attempt));
-        else throw new Error(`Update failed after ${maxRetries} retries: ${error.message}`);
-      }
-      return false;
+     for (let attempt = 1; attempt <= maxRetries; attempt++) {
+       const { error } = await supabase.from("scientific_names").update(payload).eq("id", id);
+       if (!error) return true;
+       console.warn(`Update attempt ${attempt} for ${id} failed: ${error.message}`);
+       if (attempt < maxRetries) await new Promise(res => setTimeout(res, delay * attempt));
+       else throw new Error(`Update failed after ${maxRetries} retries: ${error.message}`);
+     }
+     return false;
   }, []);
 
   const imgRowsInvalid = useMemo(() => imgRows.some(r => {
     const titleFilled = r.title.trim() !== "";
     const urlFilled = r.url.trim() !== "";
     return (titleFilled !== urlFilled) || (urlFilled && !urlRegex.test(r.url));
-  }), [imgRows, urlRegex]);
+  }), [imgRows]);
 
   const errors = useMemo(
     () => ({
@@ -375,9 +339,7 @@ export default function DialogScientificNameAdd({ onClose }) {
           <Divider sx={{ my: 3, borderWidth: 1.5, borderColor: "primary.light" }} />
           <SectionAuthority
               form={form} handleChange={handleChange} errors={errors}
-              allAuthors={allAuthors} selectedAuthors={selectedAuthors} setSelectedAuthors={setSelectedAuthors}
-              authorInputValue={authorInputValue} setAuthorInputValue={setAuthorInputValue}
-              handleAuthorRemove={handleAuthorRemove} onShowAddAuthor={() => setShowAddAuthor(true)}
+              selectedAuthors={selectedAuthors} setSelectedAuthors={setSelectedAuthors}
               yearOptions={yearOptions}
           />
           <Divider sx={{ my: 3, borderWidth: 1.5, borderColor: "primary.light" }} />
@@ -394,7 +356,7 @@ export default function DialogScientificNameAdd({ onClose }) {
               typeCategories={typeCategories} onShowAddTypeCategory={() => setShowAddTypeCategory(true)}
               countriesList={countriesList} RanksNoLocalityConst={RanksNoLocalityConst}
               scientificNameData={scientificNames} imgRows={imgRows} handleImgRowChange={handleImgRowChange}
-              addImgRow={addImgRow} removeImgRow={removeImgRow} urlRegex={urlRegex}
+              addImgRow={addImgRow} removeImgRow={removeImgRow}
           />
           <Divider sx={{ my: 3, borderWidth: 1.5, borderColor: "primary.light" }} />
           <SectionOtherInfo form={form} handleChange={handleChange} statuses={statuses} />
@@ -406,7 +368,6 @@ export default function DialogScientificNameAdd({ onClose }) {
           </Button>
         </DialogActions>
       </Dialog>
-      <DialogAuthorAdd open={showAddAuthor} onClose={() => setShowAddAuthor(false)} onAdd={handleAuthorAdd} />
       {showAddPublication && <DialogPublicationAdd open={showAddPublication} onClose={handleClosePublicationDialog} />}
       {showAddTypeCategory && <DialogTypeCategoryAdd open={showAddTypeCategory} onClose={() => setShowAddTypeCategory(false)} onAdd={handleTypeCategoryAdd} />}
       {auditLogProps && <AuditLogUpdater {...auditLogProps} />}
