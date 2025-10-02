@@ -118,7 +118,7 @@ export default function DialogSpecimen({ onClose, mode = "add", recordId = null 
           parent:current_parent(id, name_spell_valid),
           scientific_name_and_author(
             author_order,
-            authors(id, last_name_eng)
+            researchers(id, last_name_eng)
           )
         `);
       const [
@@ -138,7 +138,7 @@ export default function DialogSpecimen({ onClose, mode = "add", recordId = null 
           publications_authors(author_order, authors(last_name_eng))
         `),
         supabase.from("countries").select("id, name"),
-        supabase.from("authors").select("id, first_name_eng, last_name_eng"),
+        supabase.from("researchers").select("id, first_name_eng, last_name_eng"),
         supabase.from("life_stages").select("id, name"),
         supabase.from("preservation_methods").select("id"),
         supabase.from("ecological_tags").select("id, name"),

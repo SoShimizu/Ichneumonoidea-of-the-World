@@ -1,4 +1,3 @@
-// Taxonomy.jsx
 import React, { useEffect, useMemo, useState, useCallback, useRef } from "react";
 import {
   Box,
@@ -44,7 +43,7 @@ const darkTheme = createTheme({
     action: { active: '#7fffd4' },
   },
   typography: {
-    fontFamily:  '"Roboto","Helvetica","Arial",sans-serif',
+    fontFamily: '"Roboto","Helvetica","Arial",sans-serif',
     h3: { fontWeight: 700 },
     h6: { fontWeight: 600 },
   },
@@ -131,16 +130,21 @@ export default function Taxonomy() {
 
       try {
         const namesRes = await fetchSupabaseAll("scientific_names", "*");
+
+        // ▼▼▼ ここから修正 ▼▼▼
+        // `first_name_eng`, `last_name_eng` を `first_name`, `last_name` に修正
         const authorsRes = await fetchSupabaseAll("scientific_name_and_author", `
-            *, author:author_id (id, first_name_eng, last_name_eng)
+            *, researchers:researcher_id (id, first_name, last_name)
           `);
+        
         const [actsRes, pubsRes] = await Promise.all([
           supabase.from("taxonomic_acts").select("*"),
           supabase.from("publications").select(`
             *, journal:journal_id(*),
-            publications_authors(author_order, author:author_id(*))
+            publications_authors(author_order, author:researcher_id(id, first_name, last_name))
           `),
         ]);
+        // ▲▲▲ ここまで修正 ▲▲▲
 
         const errors = [
           namesRes.error,
@@ -155,7 +159,6 @@ export default function Taxonomy() {
         setAllTaxonomicActs(actsRes.data);
         setAllReferences({ data: pubsRes.data });
 
-        // デフォルト選択（null 安全に includes）
         if (namesRes.length) {
           const def = namesRes.find(n =>
             n.name_spell_valid?.includes("Ichneumonoidea")

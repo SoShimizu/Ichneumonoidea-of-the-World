@@ -1,43 +1,35 @@
 import {
   Dialog, DialogTitle, DialogContent, DialogActions,
-  Button, TextField, MenuItem, Stack, Autocomplete, Chip
+  Button, TextField, MenuItem, Stack, Chip, Box, Typography
 } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
 import { useState, useEffect } from "react";
 import supabase from "../../../../utils/supabase";
-import DialogAuthorAdd from "./DialogAuthorAdd";
 import DialogJournalAdd from "./DialogJournalAdd";
 import { ReactSortable } from "react-sortablejs";
+// ▼▼▼ 修正点 1: ResearcherSelectorをインポートし、古いDialogAuthorAddを削除 ▼▼▼
+import ResearcherSelector from "./parts/ResearcherSelector";
+// ▲▲▲ 修正点 1 ▲▲▲
 
 export default function DialogPublicationEdit({ publication, onClose }) {
-  // join で取得した不要プロパティを除外する
   const {
-    journal,
-    authors,
-    publications_authors,
-    scientific_name_status_obj,
-    taxonomic_act_status_obj,
-    distribution_status_obj,
-    ecological_data_status_obj,
+    journal, authors, publications_authors, scientific_name_status_obj,
+    taxonomic_act_status_obj, distribution_status_obj, ecological_data_status_obj,
     ...cleanedPublication
   } = publication;
 
   const [form, setForm] = useState(cleanedPublication);
-  const [authorsList, setAuthorsList] = useState([]);
   const [selectedAuthors, setSelectedAuthors] = useState([]);
   const [journals, setJournals] = useState([]);
   const [statuses, setStatuses] = useState([]);
-  const [showAddAuthor, setShowAddAuthor] = useState(false);
   const [showAddJournal, setShowAddJournal] = useState(false);
 
-  // registration_status テーブルから選択肢を取得
   useEffect(() => {
     (async () => {
       const { data: statusData, error: statusError } = await supabase
         .from("registration_status")
         .select("*");
       if (!statusError && statusData) {
-        // 必要に応じて表示順を調整してください
         setStatuses(statusData.sort((a, b) => a.label.localeCompare(b.label)));
       }
     })();
@@ -45,29 +37,20 @@ export default function DialogPublicationEdit({ publication, onClose }) {
 
   useEffect(() => {
     (async () => {
-      const { data: authorData } = await supabase
-        .from("authors")
-        .select("id, first_name_eng, last_name_eng");
-
-      setAuthorsList(authorData.sort((a, b) =>
-        `${a.last_name_eng} ${a.first_name_eng}`.localeCompare(`${b.last_name_eng} ${b.first_name_eng}`)
-      ));
-
+      // ▼▼▼ 修正点 2: `authorsList`の取得を削除し、データ取得クエリを修正 ▼▼▼
       const { data: journalData } = await supabase
         .from("journals")
         .select("*");
-
-      setJournals(journalData.sort((a, b) =>
-        a.name_english.localeCompare(b.name_english)
-      ));
+      setJournals(journalData.sort((a, b) => a.name_english.localeCompare(b.name_english)));
 
       const { data: authRel } = await supabase
         .from("publications_authors")
-        .select("author_id, author:author_id (id, first_name_eng, last_name_eng)")
+        .select("researcher_id, author:researcher_id (id, first_name, last_name)") // `*_eng` を削除
         .eq("publication_id", publication.id)
         .order("author_order");
+      // ▲▲▲ 修正点 2 ▲▲▲
 
-      setSelectedAuthors((authRel || []).map(r => r.author));
+      setSelectedAuthors((authRel || []).map(r => r.author).filter(Boolean));
     })();
   }, [publication.id]);
 
@@ -75,14 +58,10 @@ export default function DialogPublicationEdit({ publication, onClose }) {
     setForm(prev => ({ ...prev, [field]: value }));
   };
 
-  const handleAuthorAdd = (newAuthor) => {
-    const updated = [...authorsList, newAuthor].sort((a, b) =>
-      `${a.last_name_eng} ${a.first_name_eng}`.localeCompare(`${b.last_name_eng} ${b.first_name_eng}`)
-    );
-    setAuthorsList(updated);
-    setSelectedAuthors(prev => [...prev, newAuthor]);
+  const handleAuthorRemove = (id) => {
+    setSelectedAuthors(prev => prev.filter(a => a.id !== id));
   };
-
+  
   const handleJournalAdd = (newJournal) => {
     const updated = [...journals, newJournal].sort((a, b) =>
       a.name_english.localeCompare(b.name_english)
@@ -112,7 +91,7 @@ export default function DialogPublicationEdit({ publication, onClose }) {
     if (selectedAuthors.length > 0) {
       const relations = selectedAuthors.map((a, i) => ({
         publication_id: form.id,
-        author_id: a.id,
+        researcher_id: a.id,
         author_order: i + 1
       }));
       const { error: relErr } = await supabase.from("publications_authors").insert(relations);
@@ -120,7 +99,7 @@ export default function DialogPublicationEdit({ publication, onClose }) {
     }
 
     alert("Update successful.");
-    onClose();
+    onClose(true); // リフレッシュを要求
   };
 
   const handleDelete = async () => {
@@ -133,17 +112,16 @@ export default function DialogPublicationEdit({ publication, onClose }) {
     if (error) alert("Delete failed: " + error.message);
     else {
       alert("Deleted successfully");
-      onClose();
+      onClose(true); //リフレッシュを要求
     }
   };
 
   return (
     <>
-      <Dialog open onClose={onClose} fullWidth maxWidth="lg">
+      <Dialog open onClose={() => onClose(false)} fullWidth maxWidth="lg">
         <DialogTitle>Edit Publication</DialogTitle>
         <DialogContent dividers>
           <TextField label="ID" value={form.id} fullWidth margin="dense" disabled />
-
           <TextField
             label="Publication Date"
             type="date"
@@ -152,7 +130,6 @@ export default function DialogPublicationEdit({ publication, onClose }) {
             fullWidth margin="dense"
             InputLabelProps={{ shrink: true }}
           />
-
           <TextField
             label="Online First Date"
             type="date"
@@ -161,7 +138,6 @@ export default function DialogPublicationEdit({ publication, onClose }) {
             fullWidth margin="dense"
             InputLabelProps={{ shrink: true }}
           />
-
           <TextField
             label="Title (Original)"
             value={form.title_original || ""}
@@ -169,7 +145,6 @@ export default function DialogPublicationEdit({ publication, onClose }) {
             fullWidth margin="dense"
             multiline
           />
-
           <TextField
             label="Title (English)"
             value={form.title_english || ""}
@@ -178,85 +153,54 @@ export default function DialogPublicationEdit({ publication, onClose }) {
             multiline
           />
 
-          {/* 登録状況（ステータス）用ドロップダウン入力欄 */}
-          <TextField
-            select
-            label="Sci. Name?"
-            value={form.scientific_name_status || "not_yet"}
-            onChange={(e) => handleChange("scientific_name_status", e.target.value)}
-            fullWidth margin="dense"
-          >
-            {statuses.map(s => (
-              <MenuItem key={s.id} value={s.id}>{s.label}</MenuItem>
-            ))}
+          <TextField select label="Sci. Name?" value={form.scientific_name_status || "not_yet"} onChange={(e) => handleChange("scientific_name_status", e.target.value)} fullWidth margin="dense">
+            {statuses.map(s => (<MenuItem key={s.id} value={s.id}>{s.label}</MenuItem>))}
           </TextField>
-          <TextField
-            select
-            label="Tax. Act?"
-            value={form.taxonomic_act_status || "not_yet"}
-            onChange={(e) => handleChange("taxonomic_act_status", e.target.value)}
-            fullWidth margin="dense"
-          >
-            {statuses.map(s => (
-              <MenuItem key={s.id} value={s.id}>{s.label}</MenuItem>
-            ))}
+          <TextField select label="Tax. Act?" value={form.taxonomic_act_status || "not_yet"} onChange={(e) => handleChange("taxonomic_act_status", e.target.value)} fullWidth margin="dense">
+            {statuses.map(s => (<MenuItem key={s.id} value={s.id}>{s.label}</MenuItem>))}
           </TextField>
-          <TextField
-            select
-            label="Dist.?"
-            value={form.distribution_status || "not_yet"}
-            onChange={(e) => handleChange("distribution_status", e.target.value)}
-            fullWidth margin="dense"
-          >
-            {statuses.map(s => (
-              <MenuItem key={s.id} value={s.id}>{s.label}</MenuItem>
-            ))}
+          <TextField select label="Dist.?" value={form.distribution_status || "not_yet"} onChange={(e) => handleChange("distribution_status", e.target.value)} fullWidth margin="dense">
+            {statuses.map(s => (<MenuItem key={s.id} value={s.id}>{s.label}</MenuItem>))}
           </TextField>
-          <TextField
-            select
-            label="Ecol.?"
-            value={form.ecological_data_status || "not_yet"}
-            onChange={(e) => handleChange("ecological_data_status", e.target.value)}
-            fullWidth margin="dense"
-          >
-            {statuses.map(s => (
-              <MenuItem key={s.id} value={s.id}>{s.label}</MenuItem>
-            ))}
+          <TextField select label="Ecol.?" value={form.ecological_data_status || "not_yet"} onChange={(e) => handleChange("ecological_data_status", e.target.value)} fullWidth margin="dense">
+            {statuses.map(s => (<MenuItem key={s.id} value={s.id}>{s.label}</MenuItem>))}
           </TextField>
+          
+          {/* ▼▼▼ 修正点 3: 著者選択UIをResearcherSelectorに置き換え ▼▼▼ */}
+          <Box sx={{ my: 2 }}>
+            <Typography variant="subtitle2">Authors</Typography>
+            <ResearcherSelector
+              value={null}
+              onChange={(selectedId) => {
+                if (selectedId && !selectedAuthors.find((x) => x.id === selectedId)) {
+                  const fetchAuthor = async () => {
+                    const { data } = await supabase.from('researchers').select('*').eq('id', selectedId).single();
+                    if (data) {
+                      setSelectedAuthors((prev) => [...prev, data]);
+                    }
+                  };
+                  fetchAuthor();
+                }
+              }}
+              label="Search and Add Authors"
+            />
+            <Box border={1} borderColor="divider" borderRadius={1} p={1} mt={1} minHeight={56}>
+              <Typography variant="caption">Selected Authors (Drag to reorder)</Typography>
+              <ReactSortable list={selectedAuthors} setList={setSelectedAuthors}>
+                {selectedAuthors.map((a, i) => (
+                  <Chip
+                    key={a.id}
+                    label={`${i + 1}. ${a.last_name}, ${a.first_name}`}
+                    onDelete={() => handleAuthorRemove(a.id)}
+                    sx={{ m: 0.5, cursor: "grab" }}
+                  />
+                ))}
+              </ReactSortable>
+            </Box>
+          </Box>
+          {/* ▲▲▲ 修正点 3 ▲▲▲ */}
 
-          <Autocomplete
-            options={authorsList}
-            getOptionLabel={(a) => `${a.last_name_eng}, ${a.first_name_eng}`}
-            onChange={(e, val) => {
-              if (val && !selectedAuthors.find(sa => sa.id === val.id)) {
-                setSelectedAuthors(prev => [...prev, val]);
-              }
-            }}
-            renderInput={(params) => <TextField {...params} label="Add Author" margin="dense" />}
-          />
-          <ReactSortable list={selectedAuthors} setList={setSelectedAuthors}>
-            {selectedAuthors.map((a, index) => (
-              <Chip
-                key={a.id}
-                label={`${index + 1}. ${a.last_name_eng}, ${a.first_name_eng}`}
-                onDelete={() => setSelectedAuthors(prev => prev.filter(p => p.id !== a.id))}
-                sx={{ m: 0.5 }}
-              />
-            ))}
-          </ReactSortable>
-          <Stack direction="row" justifyContent="flex-end" mt={1}>
-            <Button size="small" startIcon={<AddIcon />} onClick={() => setShowAddAuthor(true)}>
-              + Add Author
-            </Button>
-          </Stack>
-
-          <TextField
-            select
-            label="Journal"
-            value={form.journal_id || ""}
-            onChange={(e) => handleChange("journal_id", e.target.value)}
-            fullWidth margin="dense"
-          >
+          <TextField select label="Journal" value={form.journal_id || ""} onChange={(e) => handleChange("journal_id", e.target.value)} fullWidth margin="dense">
             {journals.map(j => (
               <MenuItem key={j.id} value={j.id}>
                 {j.name_english === j.name_original ? j.name_english : `${j.name_english} (${j.name_original})`}
@@ -280,13 +224,7 @@ export default function DialogPublicationEdit({ publication, onClose }) {
             />
           ))}
 
-          <TextField
-            select
-            label="Open Access"
-            value={form.is_open_access ? "true" : "false"}
-            onChange={(e) => handleChange("is_open_access", e.target.value === "true")}
-            fullWidth margin="dense"
-          >
+          <TextField select label="Open Access" value={form.is_open_access ? "true" : "false"} onChange={(e) => handleChange("is_open_access", e.target.value === "true")} fullWidth margin="dense">
             <MenuItem value="true">Yes</MenuItem>
             <MenuItem value="false">No</MenuItem>
           </TextField>
@@ -295,12 +233,15 @@ export default function DialogPublicationEdit({ publication, onClose }) {
         <DialogActions>
           <Button onClick={handleUpdate} variant="contained" color="primary">Save</Button>
           <Button onClick={handleDelete} variant="outlined" color="error">Delete</Button>
-          <Button onClick={onClose}>Cancel</Button>
+          <Button onClick={() => onClose(false)}>Cancel</Button>
         </DialogActions>
       </Dialog>
+      
+      {/* ▼▼▼ 修正点 4: DialogAuthorAddの呼び出しを削除 ▼▼▼ */}
+      {/* <DialogAuthorAdd open={showAddAuthor} onClose={() => setShowAddAuthor(false)} onAdd={handleAuthorAdd} /> */}
+      {/* ▲▲▲ 修正点 4 ▲▲▲ */}
 
-      <DialogAuthorAdd open={showAddAuthor} onClose={() => setShowAddAuthor(false)} onAdd={handleAuthorAdd} />
-      <DialogJournalAdd open={showAddJournal} onClose={() => setShowAddJournal(false)} onAdd={handleJournalAdd} />
+      <DialogJournalAdd open={showAddJournal} onClose={(refresh) => { setShowAddJournal(false); if (refresh) { /* 再取得 */ } }} onAdd={handleJournalAdd} />
     </>
   );
 }

@@ -1,0 +1,370 @@
+-- ===========================================
+-- 0) ユーザー定義スキーマ一覧（所有者・コメント）
+-- ===========================================
+SELECT
+  n.oid                                  AS schema_oid,
+  n.nspname                              AS schema,
+  pg_get_userbyid(n.nspowner)            AS owner,
+  obj_description(n.oid,'pg_namespace')  AS comment
+FROM pg_namespace n
+WHERE n.nspname NOT IN ('pg_catalog','information_schema')
+ORDER BY n.nspname;
+
+-- =========================================================
+-- 1) テーブル一覧（種別/行数推定/サイズ/所有者/コメント）
+--    relkind: r=table, p=partitioned table, f=foreign table
+-- =========================================================
+SELECT
+  c.oid                                   AS table_oid,
+  n.nspname                               AS schema,
+  c.relname                               AS table_name,
+  CASE c.relkind WHEN 'r' THEN 'table'
+                 WHEN 'p' THEN 'partitioned table'
+                 WHEN 'f' THEN 'foreign table'
+                 ELSE c.relkind::text END AS relkind,
+  pg_get_userbyid(c.relowner)             AS owner,
+  c.reltuples::BIGINT                     AS est_rows,
+  pg_total_relation_size(c.oid)           AS total_bytes,
+  pg_relation_size(c.oid)                 AS table_bytes,
+  pg_indexes_size(c.oid)                  AS index_bytes,
+  (pg_total_relation_size(c.oid)
+   - pg_relation_size(c.oid)
+   - pg_indexes_size(c.oid))              AS toast_bytes,
+  obj_description(c.oid,'pg_class')       AS comment
+FROM pg_class c
+JOIN pg_namespace n ON n.oid = c.relnamespace
+WHERE c.relkind IN ('r','p','f')
+  AND n.nspname NOT IN ('pg_catalog','information_schema')
+ORDER BY n.nspname, c.relname;
+
+-- =========================================================
+-- 2) カラム一覧（型/NULL可否/デフォルト/ID列/照合順序/コメント）
+-- =========================================================
+SELECT
+  n.nspname                                        AS schema,
+  c.relname                                        AS table_name,
+  a.attnum                                         AS ordinal_position,
+  a.attname                                        AS column_name,
+  pg_catalog.format_type(a.atttypid, a.atttypmod)  AS data_type,
+  NOT a.attnotnull                                 AS is_nullable,
+  pg_get_expr(ad.adbin, ad.adrelid, true)          AS column_default,
+  a.attidentity                                    AS identity,           -- 'a'=ALWAYS, 'd'=BY DEFAULT, ''=not identity
+  collation_info.collname                          AS collation,
+  d.description                                    AS comment
+FROM pg_attribute a
+JOIN pg_class c           ON c.oid = a.attrelid
+JOIN pg_namespace n       ON n.oid = c.relnamespace
+LEFT JOIN pg_attrdef ad   ON ad.adrelid = a.attrelid AND ad.adnum = a.attnum
+LEFT JOIN pg_description d ON d.objoid = a.attrelid AND d.objsubid = a.attnum
+LEFT JOIN pg_collation collation_info ON collation_info.oid = a.attcollation
+WHERE a.attnum > 0
+  AND NOT a.attisdropped
+  AND c.relkind IN ('r','p','v','m','f')
+  AND n.nspname NOT IN ('pg_catalog','information_schema')
+ORDER BY n.nspname, c.relname, a.attnum;
+
+-- =======================================
+-- 3) 主キー（複合キーは列順を保持して配列化）
+-- =======================================
+SELECT
+  n.nspname             AS schema,
+  c.relname             AS table_name,
+  con.conname           AS constraint_name,
+  array_agg(a.attname ORDER BY k.ordinality) AS columns
+FROM pg_constraint con
+JOIN pg_class c      ON c.oid = con.conrelid
+JOIN pg_namespace n  ON n.oid = c.relnamespace
+JOIN LATERAL unnest(con.conkey) WITH ORDINALITY AS k(attnum, ordinality) ON true
+JOIN pg_attribute a  ON a.attrelid = c.oid AND a.attnum = k.attnum
+WHERE con.contype = 'p'
+  AND n.nspname NOT IN ('pg_catalog','information_schema')
+GROUP BY n.nspname, c.relname, con.conname
+ORDER BY n.nspname, c.relname, con.conname;
+
+-- ============================================================
+-- 4) 外部キー（親子関係、参照列、ON UPDATE/DELETE動作を文字列化）
+-- ============================================================
+WITH fk AS (
+  SELECT
+    con.oid,
+    n.nspname       AS schema,
+    c.relname       AS table_name,
+    con.conname     AS constraint_name,
+    fn.nspname      AS foreign_schema,
+    fc.relname      AS foreign_table,
+    con.conkey      AS local_cols,
+    con.confkey     AS ref_cols,
+    con.confupdtype AS up,
+    con.confdeltype AS del
+  FROM pg_constraint con
+  JOIN pg_class c     ON c.oid = con.conrelid
+  JOIN pg_namespace n ON n.oid = c.relnamespace
+  JOIN pg_class fc    ON fc.oid = con.confrelid
+  JOIN pg_namespace fn ON fn.oid = fc.relnamespace
+  WHERE con.contype = 'f'
+    AND n.nspname NOT IN ('pg_catalog','information_schema')
+)
+SELECT
+  fk.schema,
+  fk.table_name,
+  fk.constraint_name,
+  fk.foreign_schema,
+  fk.foreign_table,
+  array_agg(la.attname ORDER BY l_ord) AS columns,
+  array_agg(ra.attname ORDER BY l_ord) AS referenced_columns,
+  CASE fk.up  WHEN 'a' THEN 'NO ACTION' WHEN 'r' THEN 'RESTRICT'
+              WHEN 'c' THEN 'CASCADE'   WHEN 'n' THEN 'SET NULL'
+              WHEN 'd' THEN 'SET DEFAULT' END     AS on_update,
+  CASE fk.del WHEN 'a' THEN 'NO ACTION' WHEN 'r' THEN 'RESTRICT'
+              WHEN 'c' THEN 'CASCADE'   WHEN 'n' THEN 'SET NULL'
+              WHEN 'd' THEN 'SET DEFAULT' END     AS on_delete
+FROM fk
+-- ローカル列と参照列の順序対応付け
+JOIN LATERAL unnest(fk.local_cols) WITH ORDINALITY AS l(attnum, l_ord) ON true
+JOIN pg_attribute la ON la.attrelid = (SELECT oid FROM pg_class WHERE relname = fk.table_name
+                                       AND relnamespace = (SELECT oid FROM pg_namespace WHERE nspname = fk.schema))
+                     AND la.attnum = l.attnum
+JOIN LATERAL unnest(fk.ref_cols) WITH ORDINALITY AS r(attnum, r_ord) ON r.r_ord = l.l_ord
+JOIN pg_attribute ra ON ra.attrelid = (SELECT oid FROM pg_class WHERE relname = fk.foreign_table
+                                       AND relnamespace = (SELECT oid FROM pg_namespace WHERE nspname = fk.foreign_schema))
+                     AND ra.attnum = r.attnum
+GROUP BY fk.schema, fk.table_name, fk.constraint_name, fk.foreign_schema, fk.foreign_table, fk.up, fk.del
+ORDER BY fk.schema, fk.table_name, fk.constraint_name;
+
+-- ==========================================
+-- 5) ユニーク制約
+-- ==========================================
+SELECT
+  n.nspname AS schema,
+  c.relname AS table_name,
+  con.conname AS constraint_name,
+  array_agg(a.attname ORDER BY k.ordinality) AS columns
+FROM pg_constraint con
+JOIN pg_class c      ON c.oid = con.conrelid
+JOIN pg_namespace n  ON n.oid = c.relnamespace
+JOIN LATERAL unnest(con.conkey) WITH ORDINALITY AS k(attnum, ordinality) ON true
+JOIN pg_attribute a  ON a.attrelid = c.oid AND a.attnum = k.attnum
+WHERE con.contype = 'u'
+  AND n.nspname NOT IN ('pg_catalog','information_schema')
+GROUP BY n.nspname, c.relname, con.conname
+ORDER BY n.nspname, c.relname, con.conname;
+
+-- ==========================================
+-- 6) CHECK制約（式を取得）
+-- ==========================================
+SELECT
+  n.nspname AS schema,
+  c.relname AS table_name,
+  con.conname AS constraint_name,
+  pg_get_constraintdef(con.oid, true) AS definition
+FROM pg_constraint con
+JOIN pg_class c      ON c.oid = con.conrelid
+JOIN pg_namespace n  ON n.oid = c.relnamespace
+WHERE con.contype = 'c'
+  AND n.nspname NOT IN ('pg_catalog','information_schema')
+ORDER BY n.nspname, c.relname, con.conname;
+
+-- ==========================================
+-- 7) インデックス（定義＋統計）
+-- ==========================================
+SELECT
+  i.schemaname AS schema,
+  i.tablename  AS table_name,
+  i.indexname,
+  i.indexdef,
+  s.idx_scan,
+  s.idx_tup_read,
+  s.idx_tup_fetch
+FROM pg_indexes i
+LEFT JOIN pg_stat_all_indexes s
+  ON s.schemaname = i.schemaname
+ AND s.relname    = i.tablename
+ AND s.indexrelname = i.indexname
+WHERE i.schemaname NOT IN ('pg_catalog','information_schema')
+ORDER BY i.schemaname, i.tablename, i.indexname;
+
+-- ==========================================
+-- 8) トリガー
+-- ==========================================
+SELECT
+  n.nspname                    AS schema,
+  rel.relname                  AS table_name,
+  t.tgname                     AS trigger_name,
+  pg_get_triggerdef(t.oid, true) AS definition,
+  t.tgenabled
+FROM pg_trigger t
+JOIN pg_class rel    ON rel.oid = t.tgrelid
+JOIN pg_namespace n  ON n.oid = rel.relnamespace
+WHERE NOT t.tgisinternal
+  AND n.nspname NOT IN ('pg_catalog','information_schema')
+ORDER BY n.nspname, rel.relname, t.tgname;
+
+-- ==========================================
+-- 9) ビュー & マテビュー（定義・コメント）
+-- ==========================================
+-- Views
+SELECT
+  n.nspname AS schema,
+  c.relname AS view_name,
+  pg_get_viewdef(c.oid, true) AS definition,
+  obj_description(c.oid,'pg_class') AS comment
+FROM pg_class c
+JOIN pg_namespace n ON n.oid = c.relnamespace
+WHERE c.relkind = 'v'
+  AND n.nspname NOT IN ('pg_catalog','information_schema')
+ORDER BY n.nspname, c.relname;
+
+-- Materialized Views
+SELECT
+  n.nspname AS schema,
+  c.relname AS matview_name,
+  pg_get_viewdef(c.oid, true) AS definition,
+  obj_description(c.oid,'pg_class') AS comment
+FROM pg_class c
+JOIN pg_namespace n ON n.oid = c.relnamespace
+WHERE c.relkind = 'm'
+  AND n.nspname NOT IN ('pg_catalog','information_schema')
+ORDER BY n.nspname, c.relname;
+
+-- ==========================================
+-- 10) シーケンス（仕様）＋ 所有関係（OWNED BY）
+-- ==========================================
+SELECT
+  sequence_schema AS schema,
+  sequence_name,
+  data_type,
+  start_value,
+  minimum_value,
+  maximum_value,
+  increment,
+  cycle_option
+FROM information_schema.sequences
+WHERE sequence_schema NOT IN ('pg_catalog','information_schema')
+ORDER BY sequence_schema, sequence_name;
+
+-- シーケンス -> 所有（テーブル列）対応
+SELECT
+  ns.nspname AS schema,
+  s.relname  AS sequence_name,
+  nt.nspname AS owned_table_schema,
+  t.relname  AS owned_table,
+  a.attname  AS owned_column
+FROM pg_class s
+JOIN pg_namespace ns ON ns.oid = s.relnamespace
+LEFT JOIN pg_depend d ON d.objid = s.oid AND d.deptype = 'a'
+LEFT JOIN pg_class t   ON t.oid = d.refobjid
+LEFT JOIN pg_namespace nt ON nt.oid = t.relnamespace
+LEFT JOIN pg_attribute a ON a.attrelid = t.oid AND a.attnum = d.refobjsubid
+WHERE s.relkind = 'S'
+  AND ns.nspname NOT IN ('pg_catalog','information_schema')
+ORDER BY ns.nspname, s.relname;
+
+-- ==========================================
+-- 11) ENUM型
+-- ==========================================
+SELECT
+  n.nspname AS schema,
+  t.typname AS enum_type,
+  e.enumlabel AS label,
+  e.enumsortorder
+FROM pg_type t
+JOIN pg_enum e      ON e.enumtypid = t.oid
+JOIN pg_namespace n ON n.oid = t.typnamespace
+WHERE t.typtype = 'e'
+ORDER BY n.nspname, t.typname, e.enumsortorder;
+
+-- ==========================================
+-- 12) DOMAIN型
+-- ==========================================
+SELECT
+  n.nspname AS schema,
+  t.typname AS domain_name,
+  pg_catalog.format_type(t.typbasetype, t.typtypmod) AS underlying_type,
+  t.typnotnull AS not_null,
+  pg_get_expr(t.typdefaultbin, 0, true) AS default_expr,
+  obj_description(t.oid, 'pg_type') AS comment
+FROM pg_type t
+JOIN pg_namespace n ON n.oid = t.typnamespace
+WHERE t.typtype = 'd'
+ORDER BY n.nspname, t.typname;
+
+-- ==========================================
+-- 13) 関数／プロシージャ（定義は必要に応じて）
+-- prokind: f=function, p=procedure, a=aggregate, w=window
+-- ==========================================
+SELECT
+  n.nspname                             AS schema,
+  p.proname                             AS routine_name,
+  p.prokind                             AS kind,
+  pg_get_function_identity_arguments(p.oid) AS args,
+  pg_get_function_result(p.oid)         AS result_type,
+  pg_get_userbyid(p.proowner)           AS owner,
+  l.lanname                             AS language
+  -- , pg_get_functiondef(p.oid)        AS definition  -- 定義本文が欲しければコメント解除
+FROM pg_proc p
+JOIN pg_namespace n ON n.oid = p.pronamespace
+JOIN pg_language l  ON l.oid = p.prolang
+WHERE n.nspname NOT IN ('pg_catalog','information_schema')
+ORDER BY n.nspname, p.proname;
+
+-- ==========================================
+-- 14) パーティション（親子関係とキー）
+-- ==========================================
+-- 親テーブルのパーティションキー
+SELECT
+  n.nspname AS parent_schema,
+  c.relname AS parent_table,
+  pg_get_partkeydef(c.oid) AS partition_key
+FROM pg_class c
+JOIN pg_namespace n ON n.oid = c.relnamespace
+WHERE c.relkind IN ('p')  -- partitioned table
+  AND n.nspname NOT IN ('pg_catalog','information_schema')
+ORDER BY n.nspname, c.relname;
+
+-- 親子の紐付け（子テーブル一覧）
+SELECT
+  pn.nspname AS parent_schema,
+  pc.relname AS parent_table,
+  cn.nspname AS child_schema,
+  cc.relname AS child_table
+FROM pg_inherits i
+JOIN pg_class pc ON pc.oid = i.inhparent
+JOIN pg_namespace pn ON pn.oid = pc.relnamespace
+JOIN pg_class cc ON cc.oid = i.inhrelid
+JOIN pg_namespace cn ON cn.oid = cc.relnamespace
+WHERE pn.nspname NOT IN ('pg_catalog','information_schema')
+ORDER BY pn.nspname, pc.relname, cn.nspname, cc.relname;
+
+-- ==========================================
+-- 15) テーブル権限（必要なら）
+-- ==========================================
+SELECT
+  n.nspname AS schema,
+  c.relname AS table_name,
+  pg_catalog.array_to_string(c.relacl, E'\n') AS relacl
+FROM pg_class c
+JOIN pg_namespace n ON n.oid = c.relnamespace
+WHERE c.relkind IN ('r','p','v','m','f')
+  AND n.nspname NOT IN ('pg_catalog','information_schema')
+ORDER BY n.nspname, c.relname;
+
+-- ==========================================
+-- 【補足】特定テーブルだけ見たい場合の例
+-- ==========================================
+-- カラム
+-- SELECT * FROM information_schema.columns
+--  WHERE table_schema = 'public' AND table_name = 'audit_log'
+--  ORDER BY ordinal_position;
+--
+-- 外部キー（例：specimens_types）
+-- SELECT
+--   tc.constraint_name, kcu.column_name,
+--   ccu.table_name AS foreign_table, ccu.column_name AS foreign_column
+-- FROM information_schema.table_constraints AS tc
+-- JOIN information_schema.key_column_usage AS kcu
+--   ON tc.constraint_name = kcu.constraint_name AND tc.table_name = kcu.table_name
+-- JOIN information_schema.constraint_column_usage AS ccu
+--   ON ccu.constraint_name = tc.constraint_name
+-- WHERE tc.constraint_type = 'FOREIGN KEY'
+--   AND tc.table_schema = 'public'
+--   AND tc.table_name   = 'specimens_types';

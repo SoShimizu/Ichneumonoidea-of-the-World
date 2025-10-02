@@ -27,11 +27,11 @@ export default function ScientificNameDetailsPage() {
         const namesRes = await fetchSupabaseAll("scientific_names", `*`);
         const authorsRes = await fetchSupabaseAll(
           "scientific_name_and_author",
-          `*, author:author_id (id, first_name_eng, last_name_eng)`
+          `*, researchers:researcher_id (id, first_name_eng, last_name_eng)`
         );
         const pubsRes = await supabase
           .from("publications")
-          .select(`*, journal:journal_id(*), publications_authors(author_order, author:author_id(*))`);
+          .select(`*, journal:journal_id(*), publications_authors(author_order, author:researcher_id(*))`);
 
         setAllScientificNames(namesRes);
         setAllAuthorsData(authorsRes);

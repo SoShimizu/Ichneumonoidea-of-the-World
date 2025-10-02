@@ -1,31 +1,25 @@
-// src/components/ScientificNameDialog/Sections/AuthoritySection.jsx (修正版)
 import React from "react";
 import {
   Box,
   TextField,
-  Autocomplete,
   Chip,
-  Stack,
-  Button,
   FormControl,
   FormLabel,
   Typography,
 } from "@mui/material";
-import AddIcon from "@mui/icons-material/Add";
 import CloseIcon from "@mui/icons-material/Close";
 import { ReactSortable } from "react-sortablejs";
+// 新しく作成したResearcherSelectorをインポート
+import ResearcherSelector from "../../parts/ResearcherSelector";
+import supabase from "../../../../../../utils/supabase";
 
 const SectionAuthority = ({
   form,
   handleChange,
   errors,
-  allAuthors,
   selectedAuthors,
   setSelectedAuthors,
-  authorInputValue,
-  setAuthorInputValue,
   handleAuthorRemove,
-  onShowAddAuthor,
   yearOptions,
 }) => {
   return (
@@ -34,46 +28,44 @@ const SectionAuthority = ({
         Authority
       </Typography>
 
-      {/* Author Search Autocomplete (変更なし) */}
-      <Autocomplete
-        options={allAuthors.sort((a, b) =>
-          a.last_name_eng.localeCompare(b.last_name_eng)
-        )}
-        getOptionLabel={(a) => (a ? `${a.last_name_eng}, ${a.first_name_eng}` : '')} // Handle potential null/undefined option
-        inputValue={authorInputValue}
-        onInputChange={(e, val) => setAuthorInputValue(val)}
-        onChange={(e, val) => {
-          if (val && !selectedAuthors.find((x) => x.id === val.id)) {
-            setSelectedAuthors((prev) => [...prev, val]);
-            setAuthorInputValue(""); // Clear input after selection
+      {/* ▼▼▼ AutocompleteをResearcherSelectorに置き換え ▼▼▼ */}
+      <ResearcherSelector
+        // `value`は常に単一選択なのでnullを渡す
+        value={null}
+        // 選択されたら、`selectedAuthors`のリストに追加する
+        onChange={(selectedId) => {
+          if (selectedId && !selectedAuthors.find((x) => x.id === selectedId)) {
+            // IDだけでは表示できないので、supabaseから完全なオブジェクトを取得する
+            const fetchAuthor = async () => {
+              const { data } = await supabase.from('researchers').select('*').eq('id', selectedId).single();
+              if (data) {
+                setSelectedAuthors((prev) => [...prev, data]);
+              }
+            };
+            fetchAuthor();
           }
         }}
-        isOptionEqualToValue={(option, value) => option?.id === value?.id}
-        renderInput={(params) => (
-          <TextField {...params} label="Search and Add Authority" margin="dense" />
-        )}
-        sx={{ mb: 1 }}
+        label="Search and Add Authority"
       />
+      {/* ▲▲▲ 置き換え完了 ▲▲▲ */}
 
-      {/* Selected Authors Display (変更なし) */}
+
       <FormControl
         component="fieldset"
         margin="dense"
         fullWidth
-        required // Indicate visually that selection is needed
-        error={Boolean(errors.authority)} // Ensure boolean
+        required
+        error={Boolean(errors.authority)}
         sx={{
           border: 1,
           borderColor: errors.authority ? "error.main" : "divider",
           borderRadius: 1,
           p: 1,
           minHeight: 56,
+          mt: 2 // マージン調整
         }}
       >
-        <FormLabel
-          component="legend"
-          sx={{ fontSize: "0.8rem", mb: selectedAuthors.length ? 1 : 0 }}
-        >
+        <FormLabel component="legend" sx={{ fontSize: "0.8rem", mb: selectedAuthors.length ? 1 : 0 }}>
           Selected Authorities (Required, Drag to reorder)
         </FormLabel>
 
@@ -87,7 +79,8 @@ const SectionAuthority = ({
           {selectedAuthors.map((a, i) => (
             <Chip
               key={a.id}
-              label={`${i + 1}. ${a.last_name_eng}, ${a.first_name_eng}`}
+              // `last_name_eng` を `last_name` に変更
+              label={`${i + 1}. ${a.last_name}, ${a.first_name}`}
               onDelete={() => handleAuthorRemove(a.id)}
               sx={{ m: 0.5, cursor: "grab" }}
               deleteIcon={<CloseIcon />}
@@ -96,47 +89,23 @@ const SectionAuthority = ({
         </ReactSortable>
       </FormControl>
 
-      {/* Add Author Button (変更なし) */}
-      <Stack direction="row" justifyContent="flex-end" mt={1}>
-        <Button
-          size="small"
-          startIcon={<AddIcon />}
-          onClick={onShowAddAuthor}
-        >
-          + Add/Edit Author Master
-        </Button>
-      </Stack>
-
-      {/* Authority Year Autocomplete (修正箇所あり) */}
-      <Autocomplete
-        options={yearOptions}
-        value={form.authority_year || null}
-        onChange={(e, v) => handleChange("authority_year", v || null)}
-        inputValue={form.authority_year || ""}
-        onInputChange={(e, newValue) => {
-          // 数字4桁まで、または空文字のみ許可
-          if (/^\d{0,4}$/.test(newValue)) {
-            handleChange("authority_year", newValue);
-          }
-        }}
-        freeSolo
-        renderInput={(params) => (
-          <TextField
-            {...params} // <-- params を先に展開
-            label="Authority Year (Required)"
-            margin="dense"
-            fullWidth
-            required
-            type="text"
-            inputProps={{
-              ...params.inputProps,
-              maxLength: 4,
-            }}
-            error={Boolean(errors.authorityYear)}
-            helperText={errors.authorityYear ? "Authority Year (4 digits) is required." : ""} 
-          />
-        )}
-        sx={{ mb: 1, mt: 1 }}
+      {/* 年号の入力部分は変更なし */}
+      <TextField
+          label="Authority Year (Required)"
+          margin="dense"
+          fullWidth
+          required
+          type="text"
+          value={form.authority_year || ''}
+          onChange={(e) => {
+            if (/^\d{0,4}$/.test(e.target.value)) {
+              handleChange("authority_year", e.target.value);
+            }
+          }}
+          inputProps={{ maxLength: 4 }}
+          error={Boolean(errors.authorityYear)}
+          helperText={errors.authorityYear ? "Authority Year (4 digits) is required." : ""}
+          sx={{ mt: 1 }}
       />
     </Box>
   );

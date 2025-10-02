@@ -121,7 +121,7 @@ export default function DialogScientificNameAdd({ onClose }) {
       
       // ★★★ RepositorySelectorが自身でデータを取得するため、ここでのrepositories取得は削除 ★★★
       const [authorsRes, ranksRes, statusesRes, pubsRes, countriesRes, typeCatsRes] = await Promise.all([
-        supabase.from("authors").select("id, first_name_eng, last_name_eng").order("last_name_eng"),
+        supabase.from("researchers").select("id, first_name_eng, last_name_eng").order("last_name_eng"),
         supabase.from("rank").select("id").order("id"),
         supabase.from("extant_fossil").select("id").order("id"),
         supabase.from("publications").select(`id, title_english, publication_date, volume, number, page, journal:journal_id(name_english), publications_authors(author_order, authors(last_name_eng))`).order("id"),
@@ -315,7 +315,7 @@ export default function DialogScientificNameAdd({ onClose }) {
       if (selectedAuthors.length > 0) {
         const authorLinks = selectedAuthors.map((author, index) => ({
           scientific_name_id: trimmedId,
-          author_id: author.id,
+          researcher_id: author.id,
           author_order: index + 1,
         }));
         const { error: relError } = await supabase.from("scientific_name_and_author").insert(authorLinks);

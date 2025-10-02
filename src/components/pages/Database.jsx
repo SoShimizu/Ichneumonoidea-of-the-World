@@ -204,7 +204,7 @@ export default function Database() {
       try {
         const namesRes = await fetchSupabaseAll("scientific_names", `*`);
         const authorsRes = await fetchSupabaseAll("scientific_name_and_author", `
-                    *, author:author_id (id, first_name_eng, last_name_eng)
+                    *, researchers:researcher_id (id, first_name_eng, last_name_eng)
         `);
         const [pubsRes] = await Promise.all([
           supabase
@@ -213,7 +213,7 @@ export default function Database() {
               journal:journal_id(*),
               publications_authors(
                 author_order,
-                author:author_id(*)
+                author:researcher_id(*)
               )
             `),
         ]);
@@ -288,7 +288,7 @@ export default function Database() {
               journal:journal_id(*),
               publications_authors(
                 author_order,
-                author:author_id(*)
+                author:researcher_id(*)
               )
             `)
             .or(`title_english.ilike.%${trimmed}%,title_original.ilike.%${trimmed}%,abstract_english.ilike.%${trimmed}%,abstract_other.ilike.%${trimmed}%`)
@@ -304,7 +304,7 @@ export default function Database() {
       if (searchType === "all" || searchType === "author") {
         searchPromises.push(
           supabase
-            .from("authors")
+            .from("researchers")
             .select("*")
             .or(`last_name_eng.ilike.%${trimmed}%,first_name_eng.ilike.%${trimmed}%`)
             .then(({ data, error }) => {

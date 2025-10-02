@@ -87,7 +87,7 @@ export default function DialogScientificNameEdit({ scientificName, onClose }) {
               authors(last_name_eng)
             )
           `),
-        supabase.from("authors").select("id, first_name_eng, last_name_eng"),
+        supabase.from("researchers").select("id, first_name_eng, last_name_eng"),
         supabase.from("countries").select("id"),
         supabase.from("type_categories").select("*"),
       ]);
@@ -112,7 +112,7 @@ export default function DialogScientificNameEdit({ scientificName, onClose }) {
         .from("scientific_name_and_author")
         .select(`
           author_order,
-          authors:author_id (id, first_name_eng, last_name_eng)
+          researchers:researcher_id (id, first_name_eng, last_name_eng)
         `)
         .eq("scientific_name_id", scientificName.id)
         .order("author_order", { ascending: true });
@@ -244,7 +244,7 @@ export default function DialogScientificNameEdit({ scientificName, onClose }) {
     if (selectedAuthors.length > 0) {
       const authorLinks = selectedAuthors.map((a, index) => ({
         scientific_name_id: form.id,
-        author_id: a.id,
+        researcher_id: a.id,
         author_order: index + 1,
       }));
       const { error: insError } = await supabase

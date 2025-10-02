@@ -21,6 +21,7 @@ import ScrollTopButton from "./components/ScrollTopButton";
 import ScientificNameDetailsPage from "./components/pages/ScientificNameDetailsPage";
 import AdminTeam from "./components/pages/AdminTeam/AdminTeam";
 import ConsoleRepositories from "./components/ProtectedRoute/Admin/Consoles/ConsoleRepositories";
+import ConsoleResearchers from "./components/ProtectedRoute/Admin/Consoles/ConsoleResearchers";
 
 export default function App() {
   return (
@@ -54,6 +55,10 @@ export default function App() {
         <Route path="/admin/console-publications" element={<ProtectedRoute>
           <ConsolePublications />
           </ProtectedRoute>} />
+
+        <Route path="/admin/console-researchers" element={<ProtectedRoute>
+          <ConsoleResearchers />
+        </ProtectedRoute>} />
           
         <Route path="/admin/console-scientific-names" element={<ProtectedRoute>
           <ConsoleScientificName />

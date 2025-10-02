@@ -75,7 +75,7 @@ export default function DialogAuthorAdd({ open, onClose, onAdd }) {
     if (Object.values(newErrors).some(Boolean)) return;
 
     const { data: exists } = await supabase
-      .from("authors")
+      .from("researchers")
       .select("id")
       .eq("id", form.id);
 
@@ -91,7 +91,7 @@ export default function DialogAuthorAdd({ open, onClose, onAdd }) {
     };
 
     const { data, error } = await supabase
-      .from("authors")
+      .from("researchers")
       .insert([cleanedForm])
       .select()
       .single();

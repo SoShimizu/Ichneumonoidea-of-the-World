@@ -8,18 +8,16 @@ import {
 import EditIcon from "@mui/icons-material/Edit";
 import AddIcon from "@mui/icons-material/Add";
 
-// ダイアログをインポート (パスは実プロジェクトに合わせて！)
 import DialogScientificNameEdit from "../Dialogs/DialogScientificNameEdit";
 import DialogScientificNameAdd from "../Dialogs/DialogScientificNameAdd/DialogScientificNameAdd";
 import fetchSupabaseAllWithOrdering from "../../../../utils/fetchSupabaseAllWithOrdering";
 
-// ダークテーマとスタイル調整
 const theme = createTheme({
   palette: {
     mode: 'dark',
     background: { default: '#000000', paper: '#121212' },
-    primary: { main: '#7FFFD4' }, // Aquamarine
-    secondary: { main: '#FF6347' }, // Tomato
+    primary: { main: '#7FFFD4' },
+    secondary: { main: '#FF6347' },
     text: { primary: '#FFFFFF', secondary: '#B0B0B0' },
   },
   components: {
@@ -34,9 +32,8 @@ const theme = createTheme({
           color: '#7FFFD4',
           fontWeight: 'bold',
         },
-        // ★★★ Stickyカラム用のスタイル ★★★
-        stickyHeader: { // ヘッダーの固定セル用 (MUIデフォルトで適用されることが多い)
-            backgroundColor: '#1E1E1E', // ヘッダー背景色と同じに
+        stickyHeader: {
+          backgroundColor: '#1E1E1E',
         },
       },
     },
@@ -47,39 +44,31 @@ const theme = createTheme({
   },
 });
 
-// ★★★ カラム定義を関連性のある順に並び替え ★★★
 const columns = [
-  // 基本情報 & 名前
-  { id: 'id',                      label: 'ID',                   minWidth: 150, sticky: 'left' }, // 左端固定
-  { id: 'name_spell_valid',        label: 'Valid Name',           minWidth: 150 },
-  { id: 'name_spell_original',     label: 'Original Spelling',    minWidth: 150 },
-  { id: 'authority',               label: 'Authority',            minWidth: 150, sortable: false },
-  { id: 'authority_year',          label: 'Auth. Year',           minWidth: 100 },
-  // ランク & 親子関係
-  { id: 'current_rank',            label: 'Current Rank',         minWidth: 120 },
-  { id: 'current_parent',          label: 'Current Parent',       minWidth: 150 },
-  { id: 'original_rank',           label: 'Original Rank',        minWidth: 120 },
-  { id: 'original_parent',         label: 'Original Parent',      minWidth: 150 },
-  // ステータス & 関係性
-  { id: 'valid_name_id',           label: 'Valid Name ID',        minWidth: 150 },
-  { id: 'type_taxa_id',            label: 'Type Taxa ID',         minWidth: 150 },
-  { id: 'extant_fossil',           label: 'Extant/Fossil',        minWidth: 120 },
-  // タイプ情報
+  { id: 'id', label: 'ID', minWidth: 150, sticky: 'left' },
+  { id: 'name_spell_valid', label: 'Valid Name', minWidth: 150 },
+  { id: 'name_spell_original', label: 'Original Spelling', minWidth: 150 },
+  { id: 'authority', label: 'Authority', minWidth: 150, sortable: false },
+  { id: 'authority_year', label: 'Auth. Year', minWidth: 100 },
+  { id: 'current_rank', label: 'Current Rank', minWidth: 120 },
+  { id: 'current_parent', label: 'Current Parent', minWidth: 150 },
+  { id: 'original_rank', label: 'Original Rank', minWidth: 120 },
+  { id: 'original_parent', label: 'Original Parent', minWidth: 150 },
+  { id: 'valid_name_id', label: 'Valid Name ID', minWidth: 150 },
+  { id: 'type_taxa_id', label: 'Type Taxa ID', minWidth: 150 },
+  { id: 'extant_fossil', label: 'Extant/Fossil', minWidth: 120 },
   { id: 'type_category', label: 'Type Category', minWidth: 140 },
-  { id: 'type_locality',           label: 'Type Locality',        minWidth: 140 },
-  { id: 'type_sex',                label: 'Type Sex',             minWidth: 100 },
-  { id: 'type_repository',         label: 'Type Repository',      minWidth: 140 },
-  { id: 'type_host',               label: 'Type Host',            minWidth: 140 },
-  // 出典情報 & その他
-  { id: 'source_of_original_description', label: 'Source',        minWidth: 150 },
-  { id: 'page',                    label: 'Page',                 minWidth: 80  },
-  { id: 'remark',                  label: 'Remark',               minWidth: 200 },
-  { id: 'last_update',             label: 'Last Update',          minWidth: 160 },
-  // アクション
-  { id: 'actions',                 label: 'Actions',              minWidth: 80, sortable: false, sticky: 'right' }, // 右端固定
+  { id: 'type_locality', label: 'Type Locality', minWidth: 140 },
+  { id: 'type_sex', label: 'Type Sex', minWidth: 100 },
+  { id: 'type_repository', label: 'Type Repository', minWidth: 140 },
+  { id: 'type_host', label: 'Type Host', minWidth: 140 },
+  { id: 'source_of_original_description', label: 'Source', minWidth: 150 },
+  { id: 'page', label: 'Page', minWidth: 80 },
+  { id: 'remark', label: 'Remark', minWidth: 200 },
+  { id: 'last_update', label: 'Last Update', minWidth: 160 },
+  { id: 'actions', label: 'Actions', minWidth: 80, sortable: false, sticky: 'right' },
 ];
 
-// ▼ ソート用関数 (変更なし)
 function descendingComparator(a, b, orderBy) {
   const aVal = a[orderBy] === null || a[orderBy] === undefined ? '' : String(a[orderBy]);
   const bVal = b[orderBy] === null || b[orderBy] === undefined ? '' : String(b[orderBy]);
@@ -91,15 +80,17 @@ function getComparator(order, orderBy) {
     : (a, b) => -descendingComparator(a, b, orderBy);
 }
 
-// ▼ Authority文字列生成関数 (変更なし)
+// ▼▼▼ 修正点 1: Authority文字列生成関数を修正 ▼▼▼
 const generateAuthorityString = (authorsData) => {
     if (!authorsData || authorsData.length === 0) return "—";
-    const authors = authorsData.map(item => item.authors).filter(author => author && author.last_name_eng);
+    // `item.authors`を`item.researchers`に、`author.last_name_eng`を`author.last_name`に変更
+    const authors = authorsData.map(item => item.researchers).filter(author => author && author.last_name);
     if (authors.length === 0) return "—";
-    const authorNames = authors.map(a => a.last_name_eng);
+    const authorNames = authors.map(a => a.last_name);
     if (authorNames.length <= 3) { return authorNames.join(", "); }
     return `${authorNames.slice(0, 3).join(", ")} et al.`;
 };
+// ▲▲▲ 修正点 1 ▲▲▲
 
 
 export default function ConsoleScientificName() {
@@ -110,22 +101,22 @@ export default function ConsoleScientificName() {
   const [order, setOrder] = useState('asc');
   const [orderBy, setOrderBy] = useState('name_spell_valid');
 
-  // ▼ scientific_names一覧を取得（Authority情報も含む）(変更なし)
   const fetchScientificNames = async () => {
-    console.log("Fetching scientific names..."); // 実行確認用ログ
+    // ▼▼▼ 修正点 2: データ取得クエリを修正 ▼▼▼
     const data = await fetchSupabaseAllWithOrdering({
       tableName: "scientific_names",
         selectQuery: `
           *,
           scientific_name_and_author(
             author_order,
-            authors:author_id (
+            researchers:researcher_id (
               id,
-              last_name_eng,
-              first_name_eng
+              last_name,
+              first_name
             )
           )
         `,
+    // ▲▲▲ 修正点 2 ▲▲▲
         orderOptions: [
           {
             column: "author_order",
@@ -138,7 +129,6 @@ export default function ConsoleScientificName() {
     if (!data) {
         console.error("Error fetching scientific names with authors");
     } else if (data) {
-        console.log(`Workspaceed ${data.length} scientific names.`); // 件数ログ
       setScientificNames(data);
     }
   };
@@ -151,7 +141,7 @@ export default function ConsoleScientificName() {
 
   const handleRequestSort = (colId) => {
     const columnDefinition = columns.find(c => c.id === colId);
-    if (!columnDefinition || columnDefinition.sortable === false || columnDefinition.sticky) { // 固定列もソート不可にする
+    if (!columnDefinition || columnDefinition.sortable === false || columnDefinition.sticky) {
         return;
     }
     const isAsc = orderBy === colId && order === 'asc';
@@ -159,7 +149,6 @@ export default function ConsoleScientificName() {
     setOrderBy(colId);
   };
 
-  // ▼ 検索 (変更なし)
   const filtered = useMemo(() => {
     const kw = keyword.toLowerCase();
     if (!kw) return scientificNames;
@@ -181,50 +170,31 @@ export default function ConsoleScientificName() {
     });
   }, [scientificNames, keyword]);
 
-  // ▼ ソート (変更なし)
   const sortedFiltered = useMemo(() => {
     return [...filtered].sort(getComparator(order, orderBy));
   }, [filtered, order, orderBy]);
 
-  // ★★★ 編集ダイアログの onClose ハンドラ ★★★
   const handleEditDialogClose = (refreshNeeded, updatedData) => {
-    setEditTarget(null); // ダイアログを閉じる
+    setEditTarget(null);
     if (refreshNeeded) {
         if (updatedData) {
-            // ★ オプション: State を直接更新して即時反映 (データ再取得より高速)
-            console.log("Updating state with edited data:", updatedData);
-            // Authority情報を付与する必要があるため、updatedDataに必要な情報が含まれているか確認
-            // もしupdatedDataにAuthority情報がなければ、fetchの方が安全
-             const updatedItem = {
-                 ...updatedData,
-                 // generateAuthorityStringに必要なデータ構造を再現 or fetchを呼ぶ
-                 // DialogEdit側でAuthority情報を返せるように修正するのがベスト
-                 scientific_name_and_author: editTarget?.scientific_name_and_author // 古いデータで一旦代用 (要改善)
-             };
+            const updatedItem = {
+                ...updatedData,
+                scientific_name_and_author: editTarget?.scientific_name_and_author
+            };
             setScientificNames(prev =>
                 prev.map(item => item.id === updatedItem.id ? updatedItem : item)
             );
-             // 代わりに fetchScientificNames() を呼ぶ場合:
-             // console.log("Changes detected, refreshing data...");
-             // fetchScientificNames();
         } else {
-             // updatedData がない場合は安全に fetch
-             console.log("Changes detected (no specific data passed), refreshing data...");
-            fetchScientificNames();
+          fetchScientificNames();
         }
-    } else {
-        console.log("Edit dialog closed without changes.");
     }
   };
 
-   // ★★★ 追加ダイアログの onClose ハンドラ ★★★
    const handleAddDialogClose = (refreshNeeded) => {
      setOpenAdd(false);
      if (refreshNeeded) {
-       console.log("New item added, refreshing data...");
-       fetchScientificNames(); // 追加後はデータ全体を再取得するのが確実
-     } else {
-       console.log("Add dialog closed without adding.");
+       fetchScientificNames();
      }
    };
 
@@ -241,8 +211,7 @@ export default function ConsoleScientificName() {
           Add Scientific Name
         </Button>
 
-        {/* ★★★ TableContainer でコンテナのスタイルを指定 ★★★ */}
-        <TableContainer component={Paper} sx={{ maxHeight: 600, overflow: 'auto' }}> {/* 横スクロール可能に */}
+        <TableContainer component={Paper} sx={{ maxHeight: 600, overflow: 'auto' }}>
           <Table stickyHeader size="small">
             <TableHead>
               <TableRow>
@@ -251,28 +220,24 @@ export default function ConsoleScientificName() {
                     key={col.id}
                     style={{ minWidth: col.minWidth, whiteSpace: 'nowrap' }}
                     sortDirection={orderBy === col.id ? order : false}
-                    // ★★★ Sticky カラムのスタイル適用 ★★★
                     sx={{
                         ...(col.sticky === 'left' && {
                             position: 'sticky',
                             left: 0,
-                            zIndex: theme.zIndex.appBar + 2, // ヘッダーより手前に
-                            // backgroundColor: theme.palette.background.paper, // テーブル背景と同じ色
-                            // ↓ Head用に濃い色を指定
+                            zIndex: theme.zIndex.appBar + 2,
                             backgroundColor: '#1E1E1E',
-                            borderRight: `1px solid ${theme.palette.divider}`, // 区切り線
+                            borderRight: `1px solid ${theme.palette.divider}`,
                         }),
                         ...(col.sticky === 'right' && {
                             position: 'sticky',
                             right: 0,
                             zIndex: theme.zIndex.appBar + 2,
-                            // backgroundColor: theme.palette.background.paper,
-                             backgroundColor: '#1E1E1E',
-                             borderLeft: `1px solid ${theme.palette.divider}`, // 区切り線
+                            backgroundColor: '#1E1E1E',
+                             borderLeft: `1px solid ${theme.palette.divider}`,
                         }),
                     }}
                   >
-                    {col.sticky || col.sortable === false ? ( // 固定列もソートラベルなし
+                    {col.sticky || col.sortable === false ? (
                       col.label
                     ) : (
                       <TableSortLabel
@@ -292,27 +257,26 @@ export default function ConsoleScientificName() {
               {sortedFiltered.map((sn) => (
                 <TableRow key={sn.id} hover>
                   {columns.map((col) => {
-                     // ★★★ Sticky カラムのスタイル適用 (Body) ★★★
-                     const stickyStyles = {
-                        ...(col.sticky === 'left' && {
-                            position: 'sticky',
-                            left: 0,
-                            zIndex: theme.zIndex.appBar + 1, // 通常セルより手前
-                            backgroundColor: theme.palette.background.paper, // テーブル背景と同じ
-                            borderRight: `1px solid ${theme.palette.divider}`,
-                        }),
-                        ...(col.sticky === 'right' && {
-                            position: 'sticky',
-                            right: 0,
-                            zIndex: theme.zIndex.appBar + 1,
-                            backgroundColor: theme.palette.background.paper,
-                            borderLeft: `1px solid ${theme.palette.divider}`,
-                        }),
-                    };
+                      const stickyStyles = {
+                          ...(col.sticky === 'left' && {
+                              position: 'sticky',
+                              left: 0,
+                              zIndex: theme.zIndex.appBar + 1,
+                              backgroundColor: theme.palette.background.paper,
+                              borderRight: `1px solid ${theme.palette.divider}`,
+                          }),
+                          ...(col.sticky === 'right' && {
+                              position: 'sticky',
+                              right: 0,
+                              zIndex: theme.zIndex.appBar + 1,
+                              backgroundColor: theme.palette.background.paper,
+                              borderLeft: `1px solid ${theme.palette.divider}`,
+                          }),
+                      };
 
                     if (col.id === 'actions') {
                       return (
-                        <TableCell key="actions" sx={stickyStyles}> {/* Sticky スタイル適用 */}
+                        <TableCell key="actions" sx={stickyStyles}>
                           <IconButton onClick={() => setEditTarget(sn)}>
                             <EditIcon fontSize="small" />
                           </IconButton>
@@ -328,17 +292,16 @@ export default function ConsoleScientificName() {
                         return ( <TableCell key={col.id} sx={{ ...stickyStyles, fontFamily: 'monospace' }}>{remarkValue || "—"}</TableCell> );
                     }
                     if (col.id === 'last_update' && sn.last_update) {
-                         try {
+                        try {
                             const date = new Date(sn.last_update);
                             const formattedDate = date.toLocaleString('ja-JP', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
                              return ( <TableCell key={col.id} sx={{ ...stickyStyles, fontFamily: 'monospace' }}>{formattedDate}</TableCell> );
-                         } catch (e) { /* fallback */ }
+                        } catch (e) { /* fallback */ }
                     }
 
-                    // その他の通常のカラム
                     const cellValue = sn[col.id] ?? "";
                     return (
-                      <TableCell key={col.id} sx={{ ...stickyStyles, fontFamily: 'monospace' }}> {/* Sticky スタイル適用 */}
+                      <TableCell key={col.id} sx={{ ...stickyStyles, fontFamily: 'monospace' }}>
                         {cellValue === null || cellValue === "" ? "—" : String(cellValue)}
                       </TableCell>
                     );
@@ -349,19 +312,15 @@ export default function ConsoleScientificName() {
           </Table>
         </TableContainer>
 
-        {/* --- 編集ダイアログ --- */}
         {editTarget && (
           <DialogScientificNameEdit
             scientificName={editTarget}
-            // ★★★ 修正した onClose ハンドラを渡す ★★★
             onClose={handleEditDialogClose}
           />
         )}
 
-        {/* --- 新規追加ダイアログ --- */}
         {openAdd && (
           <DialogScientificNameAdd
-             // ★★★ 修正した onClose ハンドラを渡す ★★★
             onClose={handleAddDialogClose}
           />
         )}
