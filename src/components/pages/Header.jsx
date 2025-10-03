@@ -19,7 +19,7 @@ import AdminChatBox from "../../components/ProtectedRoute/Admin/Dialogs/AdminCha
 const baseNavItems = [
   { label: "Home", path: "/" },
   { label: "Taxonomy", path: "/taxonomy" },
-  { label: "Database", path: "/database" },
+  //{ label: "Database", path: "/database" },
   { label: "Statistics", path: "/statistics" },
   { label: "Admin Team", path: "/admin-team" },
 ];

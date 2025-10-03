@@ -22,9 +22,6 @@ import AdminDashboard from "./components/ProtectedRoute/Admin/AdminDashboard";
 
 // ── Admin Consoles ─────────────────────────────────────────────
 // 研究者・学名・タクソンアクト・バイオノミクス・リポジトリは既存のまま
-import ConsoleScientificName from "./components/ProtectedRoute/Admin/Consoles/ConsoleScientificName";
-import ConsoleTaxonomicActs from "./components/ProtectedRoute/Admin/Consoles/ConsoleTaxonomicActs";
-import ConsoleBionomicRecords from "./components/ProtectedRoute/Admin/Consoles/ConsoleBionomicRecords";
 
 // Publications だけは新しい「共通フレーム」実装に切替
 import PublicationsConsole from "./components/ProtectedRoute/Admin/Consoles/Pages/PublicationsConsole";
@@ -34,6 +31,9 @@ import { theme } from "./components/ProtectedRoute/Admin/Consoles/Framework/them
 import { ToastProvider } from "./components/ProtectedRoute/Admin/Consoles/Framework/ToastProvider";
 import ResearchersConsole from "./components/ProtectedRoute/Admin/Consoles/Pages/ResearchersConsole";
 import InstitutesConsole from "./components/ProtectedRoute/Admin/Consoles/Pages/InstitutesConsole";
+import ScientificNamesConsole from "./components/ProtectedRoute/Admin/Consoles/Pages/ScientificNamesConsole";
+import TaxonomicActsConsole from "./components/ProtectedRoute/Admin/Consoles/Pages/TaxonomicActsConsole";
+import BionomicRecordsConsole from "./components/ProtectedRoute/Admin/Consoles/Pages/BionomicRecordsConsole";
 
 // 404 シンプル版（必要なければ削除してください）
 function NotFound() {
@@ -100,7 +100,7 @@ export default function App() {
                 path="/admin/console-scientific-names"
                 element={
                   <ProtectedRoute>
-                    <ConsoleScientificName />
+                    <ScientificNamesConsole />
                   </ProtectedRoute>
                 }
               />
@@ -108,7 +108,7 @@ export default function App() {
                 path="/admin/console-taxonomic-acts"
                 element={
                   <ProtectedRoute>
-                    <ConsoleTaxonomicActs />
+                    <TaxonomicActsConsole />
                   </ProtectedRoute>
                 }
               />
@@ -116,7 +116,7 @@ export default function App() {
                 path="/admin/console-bionomics"
                 element={
                   <ProtectedRoute>
-                    <ConsoleBionomicRecords />
+                    <BionomicRecordsConsole />
                   </ProtectedRoute>
                 }
               />
