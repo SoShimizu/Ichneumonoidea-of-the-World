@@ -22,11 +22,9 @@ import AdminDashboard from "./components/ProtectedRoute/Admin/AdminDashboard";
 
 // ── Admin Consoles ─────────────────────────────────────────────
 // 研究者・学名・タクソンアクト・バイオノミクス・リポジトリは既存のまま
-import ConsoleResearchers from "./components/ProtectedRoute/Admin/Consoles/ConsoleResearchers";
 import ConsoleScientificName from "./components/ProtectedRoute/Admin/Consoles/ConsoleScientificName";
 import ConsoleTaxonomicActs from "./components/ProtectedRoute/Admin/Consoles/ConsoleTaxonomicActs";
 import ConsoleBionomicRecords from "./components/ProtectedRoute/Admin/Consoles/ConsoleBionomicRecords";
-import ConsoleRepositories from "./components/ProtectedRoute/Admin/Consoles/ConsoleRepositories";
 
 // Publications だけは新しい「共通フレーム」実装に切替
 import PublicationsConsole from "./components/ProtectedRoute/Admin/Consoles/Pages/PublicationsConsole";
@@ -34,6 +32,8 @@ import PublicationsConsole from "./components/ProtectedRoute/Admin/Consoles/Page
 // ── 共通フレーム（テーマ／トースト） ─────────────────────────────
 import { theme } from "./components/ProtectedRoute/Admin/Consoles/Framework/theme";
 import { ToastProvider } from "./components/ProtectedRoute/Admin/Consoles/Framework/ToastProvider";
+import ResearchersConsole from "./components/ProtectedRoute/Admin/Consoles/Pages/ResearchersConsole";
+import InstitutesConsole from "./components/ProtectedRoute/Admin/Consoles/Pages/InstitutesConsole";
 
 // 404 シンプル版（必要なければ削除してください）
 function NotFound() {
@@ -92,7 +92,7 @@ export default function App() {
                 path="/admin/console-researchers"
                 element={
                   <ProtectedRoute>
-                    <ConsoleResearchers />
+                    <ResearchersConsole />
                   </ProtectedRoute>
                 }
               />
@@ -124,7 +124,7 @@ export default function App() {
                 path="/admin/console-repositories"
                 element={
                   <ProtectedRoute>
-                    <ConsoleRepositories />
+                    <InstitutesConsole />
                   </ProtectedRoute>
                 }
               />
