@@ -9,7 +9,7 @@ import {
   Typography,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
-import RepositorySelector from '../../parts/RepositorySelector';
+import RepositorySelector from '../parts/RepositorySelector';
 
 const TypeSpecimenSection = ({
   form,

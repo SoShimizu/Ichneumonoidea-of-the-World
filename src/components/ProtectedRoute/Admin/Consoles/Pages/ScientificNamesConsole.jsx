@@ -7,7 +7,7 @@ import useConsoleData from "../Data/useConsoleData";
 import scientificNamesPlugin from "../Plugins/scientificNames.plugin";
 
 import DialogScientificNameEdit from "../../Dialogs/DialogScientificNameEdit";
-import DialogScientificNameAdd from "../../Dialogs/DialogScientificNameAdd/DialogScientificNameAdd";
+import DialogScientificNameAdd from "../../Dialogs/DialogScientificNameAdd";
 
 export default function ScientificNamesConsole() {
   const [page, setPage] = useState(0);

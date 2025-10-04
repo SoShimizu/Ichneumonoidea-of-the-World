@@ -27,7 +27,7 @@ import supabase from "../../../../utils/supabase"; // パスは環境に合わ�
 // --- Custom Components ---
 import LoadingScreen from "../../../LoadingScreen"; // パスは環境に合わせてください
 import DialogPublicationAdd from "./DialogPublicationAdd"; // パスは環境に合わせてください
-import DialogScientificNameAdd from "./DialogScientificNameAdd/DialogScientificNameAdd"; // パスは環境に合わせてください
+import DialogScientificNameAdd from "./DialogScientificNameAdd";
 import DialogSpecimen from "./DialogSpecimen"; // ★ Specimen 追加用ダイアログをインポート
 import AuditLogUpdater from "../../AuditLogUpdater/AuditLogUpdater"; // パスは環境に合わせてください
 import fetchSupabaseAll from "../../../../utils/fetchSupabaseAll";

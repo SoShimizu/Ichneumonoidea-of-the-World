@@ -1,4 +1,3 @@
-// src/components/ProtectedRoute/Admin/Consoles/Plugins/scientificNames.plugin.js
 import { Button, Chip, Typography } from "@mui/material";
 import supabase from "../../../../../utils/supabase";
 import fetchSupabaseAllWithOrdering from "../../../../../utils/fetchSupabaseAllWithOrdering";
@@ -93,7 +92,6 @@ const plugin = {
   `,
 
   normalize(row) {
-    // 表示用派生フィールド（undefined対策は「」で返す）
     return {
       ...row,
       _authors: formatAuthors(row?.scientific_name_and_author),
@@ -102,7 +100,7 @@ const plugin = {
   },
 
   /**
-   * 取得 → 合成 → ログ → 検索/ソート/ページング
+   * 取得 → 合成 → 検索/ソート/ページング
    */
   async fetch({ page, pageSize, orderBy, ascending, search }) {
     console.debug(`${TAG} ► fetch start`, { page, pageSize, orderBy, ascending, search });
@@ -125,10 +123,10 @@ const plugin = {
       return { rows: [], total: 0 };
     }
 
-    // 2) 有効名（valid_name_id → name_spell_valid）の合成用マップ
+    // 2) valid_name 解決用マップ
     const id2validName = new Map(all.map((r) => [r.id, r.name_spell_valid]));
 
-    // 3) Type Repository 詳細表示のため必要な UUID を集計して取得
+    // 3) Repository 詳細取得
     const needRepoIds = Array.from(
       new Set(
         all
@@ -155,13 +153,20 @@ const plugin = {
       }
     }
 
-    // 4) 表示用フィールドを合成（**ここで“Name (valid) / Original Spelling”ログも出す**）
+    // 4) 表示用フィールド合成（Status 判定のロバスト化）
+    const synonymKeywords = ["synonym", "junior synonym", "objective synonym", "subjective synonym"];
     let merged = all.map((r) => {
       const _nameValidDisp = pickFirst(r, ["name_spell_valid", "valid_name", "name_valid", "name"]);
       const _nameOrigDisp = pickFirst(r, ["name_spell_original", "name_original", "original_name"]);
 
-      const _is_synonym = !!(r.valid_name_id && r.valid_name_id !== r.id);
-      const _validName = r.valid_name_id ? id2validName.get(r.valid_name_id) || "" : "";
+      const rankLower = (r.current_rank || "").toString().toLowerCase();
+      const isSynonymByRank = synonymKeywords.some((kw) => rankLower === kw);
+      const isSynonymByLink = !!(r.valid_name_id && r.valid_name_id !== r.id);
+      const _is_synonym = isSynonymByRank || isSynonymByLink;
+
+      const _validName = isSynonymByLink
+        ? id2validName.get(r.valid_name_id) || ""
+        : ""; // リンクが無い synonym は空表示のまま
 
       const _typeRepo =
         r.type_repository ||
@@ -176,26 +181,6 @@ const plugin = {
         _typeRepo,
         _remark: r?.remark ?? r?.Remark ?? "",
       });
-    });
-
-    // ★ 逐次診断ログ（先頭 10 件, 欠損件数）
-    const missValid = merged.filter((x) => !x._nameValidDisp).length;
-    const missOrig = merged.filter((x) => !x._nameOrigDisp).length;
-    console.debug(`${TAG} ► diagnostics (first up to 10)`);
-    merged.slice(0, 10).forEach((r, i) =>
-      console.debug(`#${i}`, {
-        id: r.id,
-        name_valid: r._nameValidDisp,
-        original_spelling: r._nameOrigDisp,
-        is_synonym: r._is_synonym,
-        valid_name_resolved: r._validName,
-        repo_detail: r._typeRepo,
-        authors: r._authors,
-      })
-    );
-    console.debug(`${TAG} ► stats`, {
-      missing_name_spell_valid: missValid,
-      missing_name_spell_original: missOrig,
     });
 
     // 5) 検索
@@ -228,7 +213,6 @@ const plugin = {
           .map((x) => norm(x))
           .some((x) => x.includes(q))
       );
-      console.debug(`${TAG} ✓ after search: ${merged.length}`);
     }
 
     // 6) 並べ替え
@@ -267,27 +251,11 @@ const plugin = {
       return (av ?? "").toString().localeCompare((bv ?? "").toString()) * dir;
     });
 
-    // 7) ページング + 最終ログ
+    // 7) ページング
     const total = merged.length;
     const from = page * pageSize;
     const to = from + pageSize;
     const rows = merged.slice(from, to);
-
-    console.debug(`${TAG} ✓ done`, {
-      page,
-      pageSize,
-      returned: rows.length,
-      total,
-      sampleRow: rows[0]
-        ? {
-            id: rows[0].id,
-            name_valid: rows[0]._nameValidDisp,
-            original: rows[0]._nameOrigDisp,
-            valid_resolved: rows[0]._validName,
-            repo: rows[0]._typeRepo,
-          }
-        : null,
-    });
 
     return { rows, total };
   },

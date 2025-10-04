@@ -19,7 +19,7 @@ import RepositorySelector from "./parts/RepositorySelector";
 
 // Sub-Dialogs (for adding new master data)
 import DialogPublicationAdd from "./DialogPublicationAdd";
-import DialogScientificNameAdd from "./DialogScientificNameAdd/DialogScientificNameAdd";
+import DialogScientificNameAdd from "./DialogScientificNameAdd";
 import DialogResearcher from "./DialogResearcher";
 import LoadingScreen from "../../../LoadingScreen";
 import AuditLogUpdater from "../../AuditLogUpdater/AuditLogUpdater";

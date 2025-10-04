@@ -1,7 +1,7 @@
 // src/components/ProtectedRoute/Admin/Dialogs/ScientificName/Sections/SectionIdSource.jsx
 import React from "react";
 import { Box, TextField, Typography } from "@mui/material";
-import PublicationSelector from "../../parts/PublicationSelector";
+import PublicationSelector from "../parts/PublicationSelector";
 
 export default function SectionIdSource({
   form,

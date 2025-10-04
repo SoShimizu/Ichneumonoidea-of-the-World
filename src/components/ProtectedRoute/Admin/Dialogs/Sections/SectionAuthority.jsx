@@ -10,8 +10,8 @@ import {
 import CloseIcon from "@mui/icons-material/Close";
 import { ReactSortable } from "react-sortablejs";
 // 新しく作成したResearcherSelectorをインポート
-import ResearcherSelector from "../../parts/ResearcherSelector";
-import supabase from "../../../../../../utils/supabase";
+import ResearcherSelector from "../parts/ResearcherSelector";
+import supabase from "../../../../../utils/supabase";
 
 const SectionAuthority = ({
   form,

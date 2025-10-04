@@ -10,11 +10,22 @@ import DialogPublicationAdd from "../DialogPublicationAdd";
 
 const TAG = "[PublicationSelector]";
 
+/* ---------------------- utils ---------------------- */
+const isUuid = (s) =>
+  typeof s === "string" &&
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(s);
+
+const isIntLike = (v) =>
+  (typeof v === "number" && Number.isInteger(v)) ||
+  (typeof v === "string" && /^\d+$/.test(v));
+
+const chunk = (arr, n) =>
+  Array.from({ length: Math.ceil(arr.length / n) }, (_, i) => arr.slice(i * n, (i + 1) * n));
+
 /** HTMLタグ除去 + エンティティ復号（安全にプレーンテキスト化） */
 function stripHtmlAndDecode(input) {
   if (!input) return "";
-  const noTags = String(input).replace(/<[^>]*>/g, " "); // タグは空白化（単語が潰れないように）
-  // ブラウザのデコーダでエンティティ復号
+  const noTags = String(input).replace(/<[^>]*>/g, " ");
   const el = document.createElement("textarea");
   el.innerHTML = noTags;
   return el.value.replace(/\s+/g, " ").trim();
@@ -31,15 +42,11 @@ function formatAuthors(authors = []) {
 /** デフォルトのラベル文字列（必ず string を返す） */
 function defaultLabel(p) {
   if (!p) return "";
-  const authors = (p.publications_authors || [])
-    .sort((a, b) => a.author_order - b.author_order)
-    .map(x => x?.researchers?.last_name)
-    .filter(Boolean);
-
+  const authors = Array.isArray(p._authors) ? p._authors : [];
   const authorStr = formatAuthors(authors);
   const year = p.publication_date ? new Date(p.publication_date).getFullYear() : "n.d.";
   const title = stripHtmlAndDecode(p.title_english || "[No Title]");
-  const journal = stripHtmlAndDecode(p?.journal?.name_english || "");
+  const journal = stripHtmlAndDecode(p._journal_name || "");
   const volume = p.volume ? ` ${p.volume}` : "";
   const number = p.number ? `(${p.number})` : "";
   const pageInfo = p.page ? `: ${p.page}` : "";
@@ -47,11 +54,129 @@ function defaultLabel(p) {
   return `${authorStr ? authorStr + " " : ""}(${year}). ${title}${journalInfo}`;
 }
 
+/* ---------- 安全な付加情報ハイドレーション ---------- */
+
+/** 1 publication の著者名一覧（中間テーブル差異にも対応） */
+async function fetchAuthorsForPublication(pubId) {
+  // ★ 重要：publication_id が UUID/数値でない場合は問い合わせない（400 の原因）
+  if (!(isUuid(pubId) || isIntLike(pubId))) return [];
+
+  const middleCandidates = ["publications_authors", "publication_authors"];
+
+  for (const table of middleCandidates) {
+    try {
+      const { data: rel, error } = await supabase
+        .from(table)
+        .select("author_order, researcher_id, author_id")
+        .eq("publication_id", pubId)
+        .order("author_order", { ascending: true });
+
+      if (error || !rel) continue;
+      if (!rel.length) return [];
+
+      const researcherIds = [...new Set(rel.map((r) => r.researcher_id).filter(Boolean))];
+      const authorIds = [...new Set(rel.map((r) => r.author_id).filter(Boolean))];
+
+      let researcherNameById = new Map();
+      if (researcherIds.length) {
+        const { data } = await supabase
+          .from("researchers")
+          .select("id, last_name_eng, last_name")
+          .in("id", researcherIds);
+        if (data) researcherNameById = new Map(data.map((r) => [r.id, r.last_name_eng || r.last_name || ""]));
+      }
+
+      let authorNameById = new Map();
+      if (!researcherIds.length && authorIds.length) {
+        const { data } = await supabase
+          .from("authors")
+          .select("id, last_name_eng, last_name")
+          .in("id", authorIds);
+        if (data) authorNameById = new Map(data.map((a) => [a.id, a.last_name_eng || a.last_name || ""]));
+      }
+
+      return rel
+        .map((r) => ({
+          order: r.author_order ?? 0,
+          name:
+            (r.researcher_id && researcherNameById.get(r.researcher_id)) ||
+            (r.author_id && authorNameById.get(r.author_id)) ||
+            "",
+        }))
+        .sort((a, b) => a.order - b.order)
+        .map((x) => x.name)
+        .filter(Boolean);
+    } catch {
+      // 次の候補を試す
+    }
+  }
+
+  return [];
+}
+
+/** publications の配列に _authors を付ける（小バッチ並列で安全に） */
+async function hydrateAuthors(rows, concurrency = 8) {
+  const batches = chunk(rows, concurrency);
+  const out = [];
+
+  for (const b of batches) {
+    const results = await Promise.all(
+      b.map(async (row) => {
+        const names = await fetchAuthorsForPublication(row.id);
+        return { ...row, _authors: names };
+      })
+    );
+    out.push(...results);
+  }
+  return out;
+}
+
+/** journals を安全に解決（journal_id が UUID/数値のときのみ参照） */
+async function hydrateJournals(rows) {
+  const ids = [...new Set(rows.map((r) => r.journal_id).filter((v) => isUuid(v) || isIntLike(v)))];
+  if (!ids.length) {
+    return rows.map((r) => ({
+      ...r,
+      _journal_name: typeof r.journal_id === "string" ? r.journal_id : "",
+    }));
+  }
+
+  let jmap = new Map();
+  for (const t of ["journals", "journal"]) {
+    try {
+      const { data, error } = await supabase.from(t).select("id, name_english, name").in("id", ids);
+      if (!error && data) {
+        jmap = new Map(data.map((j) => [String(j.id), j.name_english || j.name || ""]));
+        break;
+      }
+    } catch {
+      // 次の候補へ
+    }
+  }
+
+  return rows.map((r) => {
+    const key = String(r.journal_id);
+    const resolved = jmap.get(key);
+    return {
+      ...r,
+      _journal_name: resolved ?? (typeof r.journal_id === "string" ? r.journal_id : ""),
+    };
+  });
+}
+
+async function hydrateExtras(rows) {
+  const withJ = await hydrateJournals(rows);
+  const withA = await hydrateAuthors(withJ);
+  return withA;
+}
+
+/* ---------------------- component ---------------------- */
+
 /**
  * props（両系統のprop名に対応）
  * - label?: string
- * - value?: string | null
- * - onChange?: (selectedId: string|null) => void
+ * - value?: string | number | null
+ * - onChange?: (selectedId: string|number|null) => void
  * - publicationsData?: any[]                // 初期オプション（空OK）
  * - renderOptionLabel?: (row)=>string|JSX   // 任意：なければ defaultLabel
  * - required?: boolean | isRequired?: boolean
@@ -59,7 +184,7 @@ function defaultLabel(p) {
  */
 export default function PublicationSelector(props) {
   const {
-    label = "Publication",
+    label = "Source of Original Description",
     value = null,
     onChange,
     publicationsData = [],
@@ -78,52 +203,49 @@ export default function PublicationSelector(props) {
   const [openedAdd, setOpenedAdd] = useState(false);
   const [debouncedInput] = useDebounce(input, 350);
 
-  // 初期候補
+  /* ---- 初期候補を安全に整形 ---- */
   useEffect(() => {
-    if (Array.isArray(publicationsData)) {
-      console.debug(`${TAG} hydrate seedOptions`, publicationsData.length);
-      setSeedOptions(publicationsData);
-    }
+    (async () => {
+      if (!Array.isArray(publicationsData) || publicationsData.length === 0) {
+        setSeedOptions([]);
+        return;
+      }
+      const needHydrate = publicationsData.some((p) => !("_authors" in p) || !("_journal_name" in p));
+      const seeded = needHydrate ? await hydrateExtras(publicationsData) : publicationsData;
+      setSeedOptions(seeded);
+    })();
   }, [publicationsData]);
 
-  // value(id) => option復元（optionsに無ければ単独フェッチして補完）
+  /* ---- value(id) -> option 復元 ---- */
   const selectedOption = useMemo(() => {
-    if (!value) return null;
-    const found = options.find(o => o?.id === value) || seedOptions.find(o => o?.id === value) || null;
-    if (!found) {
-      (async () => {
-        try {
-          setLoading(true);
-          console.debug(`${TAG} fetch selected by id`, value);
-          const { data, error } = await supabase
-            .from("publications")
-            .select(`
-              id, title_english, publication_date, volume, number, page,
-              journal:journal_id(name_english),
-              publications_authors(
-                author_order,
-                researchers:researcher_id(last_name, first_name)
-              )
-            `)
-            .eq("id", value)
-            .maybeSingle();
-          if (error) {
-            console.warn(`${TAG} fetch selected failed`, error);
-          } else if (data) {
-            setOptions(curr => {
-              if (curr.some(p => p.id === data.id)) return curr;
-              return [data, ...curr];
-            });
-          }
-        } finally {
-          setLoading(false);
-        }
-      })();
-    }
-    return found;
+    if (value == null) return null;
+    return (
+      options.find((o) => String(o?.id) === String(value)) ||
+      seedOptions.find((o) => String(o?.id) === String(value)) ||
+      null
+    );
   }, [value, options, seedOptions]);
 
-  // ラベル関数（常に string 返却・HTML除去）
+  useEffect(() => {
+    if (value == null || selectedOption) return;
+    (async () => {
+      try {
+        setLoading(true);
+        const { data, error } = await supabase
+          .from("publications")
+          .select("id, title_english, publication_date, volume, number, page, journal_id")
+          .eq("id", value)
+          .maybeSingle();
+        if (error || !data) return;
+        const hydrated = (await hydrateExtras([data]))[0];
+        setOptions((curr) => (curr.some((p) => String(p.id) === String(hydrated.id)) ? curr : [hydrated, ...curr]));
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, [value, selectedOption]);
+
+  /* ---- ラベル関数 ---- */
   const getOptionLabel = useCallback(
     (opt) => {
       if (!opt) return "";
@@ -138,34 +260,23 @@ export default function PublicationSelector(props) {
     [renderOptionLabel]
   );
 
-  // サーバ検索（入力2文字以上で実行）。結果を**置き換え**る（マージしない）。
+  /* ---- 検索（サーバは publications だけ、追加情報はローカルで安全に） ---- */
   const runServerSearch = useCallback(
     async (term) => {
       const t = (term || "").trim();
       if (t.length < 2) {
-        console.debug(`${TAG} term < 2, show seedOptions only`);
         setOptions(seedOptions.slice(0, 30));
         return;
       }
       setLoading(true);
       try {
-        console.debug(`${TAG} search:start`, t);
-        const sel = `
-          id, title_english, publication_date, volume, number, page,
-          journal:journal_id(name_english),
-          publications_authors(
-            author_order,
-            researchers:researcher_id(last_name, first_name)
-          )
-        `;
-        // サーバ側は id / title で広く拾い、……
         const orExpr = `id.ilike.%${t}%,title_english.ilike.%${t}%`;
         const { data, error } = await supabase
           .from("publications")
-          .select(sel)
+          .select("id, title_english, publication_date, volume, number, page, journal_id")
           .or(orExpr)
           .order("id", { ascending: true })
-          .limit(50);
+          .limit(40);
 
         if (error) {
           console.error(`${TAG} search error`, error);
@@ -173,17 +284,17 @@ export default function PublicationSelector(props) {
           return;
         }
 
-        // ……クライアント側で getOptionLabel 文字列に対して追加フィルタ（著者名やジャーナル名も命中）
-        const lower = t.toLowerCase();
-        const filtered = (data || []).filter((row) => getOptionLabel(row).toLowerCase().includes(lower));
+        const hydrated = await hydrateExtras(data || []);
 
-        // 選択中の値が候補に無ければ先頭に足す
+        // getOptionLabel ベースでもう一段フィルタ（著者名/ジャーナル名でもヒット）
+        const lower = t.toLowerCase();
+        const filtered = hydrated.filter((row) => getOptionLabel(row).toLowerCase().includes(lower));
+
+        // 選択中の値を先頭に保持
         let next = filtered;
-        if (value && !filtered.some(r => r.id === value) && selectedOption) {
+        if (value != null && selectedOption && !filtered.some((r) => String(r.id) === String(value))) {
           next = [selectedOption, ...filtered];
         }
-
-        console.debug(`${TAG} search:done`, { fetched: data?.length ?? 0, shown: next.length });
         setOptions(next);
       } finally {
         setLoading(false);
@@ -192,50 +303,42 @@ export default function PublicationSelector(props) {
     [seedOptions, getOptionLabel, value, selectedOption]
   );
 
-  // 入力が変わったら検索
   useEffect(() => { runServerSearch(debouncedInput); }, [debouncedInput, runServerSearch]);
+  useEffect(() => { if (!debouncedInput?.trim()) setOptions(seedOptions.slice(0, 30)); }, [debouncedInput, seedOptions]);
 
-  // 初回はシードだけ出す
-  useEffect(() => {
-    if (!debouncedInput?.trim()) setOptions(seedOptions.slice(0, 30));
-  }, [debouncedInput, seedOptions]);
-
-  // 追加後のリフレッシュ対応（prop名どちらでもOK）
+  /* ---- 追加ダイアログ後の再読込 ---- */
   const handleCloseAdd = async (didAdd) => {
     setOpenedAdd(false);
     const refresher = onRefreshData || onRefreshPublications;
     if (didAdd && refresher) {
-      console.debug(`${TAG} refresh after add`);
-      await refresher();
-      // 最新シードに置き換え
-      setOptions((curr) => seedOptions.slice(0, 30));
+      await refresher();           // 親から publicationsData が更新される想定
+      setOptions([]);              // いったんクリア → seedOptions の effect が反映
     }
   };
 
   return (
     <>
-      <Stack direction="row" spacing={1} alignItems="flex-start">
+      <Stack direction="row" spacing={1} alignItems="flex-start" sx={{ width: "100%" }}>
         <Autocomplete
           options={options}
           value={selectedOption}
-          onChange={(_, val) => {
-            const id = val?.id ?? null;
-            console.debug(`${TAG} onChange ->`, id);
-            onChange?.(id);
-          }}
+          onChange={(_, val) => onChange?.(val?.id ?? null)}
           inputValue={input}
           onInputChange={(_, v) => setInput(v)}
-          isOptionEqualToValue={(opt, val) => !!opt?.id && !!val?.id && opt.id === val.id}
+          isOptionEqualToValue={(opt, val) => String(opt?.id) === String(val?.id)}
           getOptionLabel={getOptionLabel}
-          // ★ クライアントフィルタは有効のまま（getOptionLabelベースで自然に絞られる）
           loading={loading}
-          renderOption={(props, option) => (
-            <li {...props}>
-              <Box component="span" sx={{ display: "block", wordBreak: "break-word", whiteSpace: "normal" }}>
-                {getOptionLabel(option)}
-              </Box>
-            </li>
-          )}
+          renderOption={(props, option) => {
+            // ★ key 警告の回避：props.key を取り出して直接渡す
+            const { key, ...rest } = props;
+            return (
+              <li key={key} {...rest}>
+                <Box component="span" sx={{ display: "block", wordBreak: "break-word", whiteSpace: "normal" }}>
+                  {getOptionLabel(option)}
+                </Box>
+              </li>
+            );
+          }}
           renderInput={(params) => (
             <TextField
               {...params}
@@ -255,6 +358,8 @@ export default function PublicationSelector(props) {
             />
           )}
           sx={{ flexGrow: 1 }}
+          ListboxProps={{ style: { maxHeight: 360 } }}
+          noOptionsText={debouncedInput?.trim()?.length >= 2 ? "No results" : "Type 2+ characters to search"}
         />
 
         <Button
